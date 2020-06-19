@@ -1,0 +1,22 @@
+Package: MASSIVE
+Title: MASSIVE: Tractable and Robust Bayesian Learning of Many-Dimensional Instrumental Variable Models
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Ioan Gabriel",
+           family = "Bucur",
+           role = c("aut", "cre"),
+           email = "ioan.gabriel.bucur@gmail.com",
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: Implementation of the approach described in the UAI 2020 paper titled "MASSIVE: Tractable and Robust Bayesian Learning of Many-Dimensional Instrumental Variable Models".
+License: `use_mit_license()`, `use_gpl3_license()` or friends to
+    pick a license
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.0
+LinkingTo: 
+    Rcpp,
+    RcppArmadillo,
+    BH
+Imports: 
+    Rcpp
