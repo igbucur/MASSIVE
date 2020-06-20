@@ -1,22 +1,19 @@
 
 #' Routine for (more robustly) finding a MASSIVE posterior local optimum
 #'
-#' @param J 
-#' @param N 
-#' @param SS 
-#' @param sigma_G 
-#' @param prior_sd 
-#' @param skappa_X 
-#' @param skappa_Y 
-#' @param tol 
-#' @param post_fun 
-#' @param gr_fun 
-#' @param hess_fun 
+#' @param J Integer number of candidate instruments
+#' @param N Integer number of observations
+#' @param SS Numeric moments matrix
+#' @param sigma_G Numeric vector of instrument variances
+#' @param prior_sd List containing prior hyperparameters
+#' @param skappa_X Numeric value of confounding coefficient used for initialization
+#' @param skappa_Y Numeric value of confounding coefficient used for initialization
+#' @param tol Numeric tolerance stopping value for optimization
+#' @param post_fun Function computing the negative log-posterior
+#' @param gr_fun Function computing the negative log-posterior gradient
+#' @param hess_fun Function computing the negative log-posterior Hessian
 #'
-#' @return
-#' @export
-#'
-#' @examples
+#' @return Local posterior optimum
 robust_find_optimum <- function(J, N, SS, sigma_G, prior_sd, skappa_X, skappa_Y, tol = 1e-6,
                          post_fun = scaled_nl_posterior_log, gr_fun = scaled_nl_gradient_log, hess_fun = scaled_nl_hessian_log) {
   
@@ -70,7 +67,20 @@ robust_find_optimum <- function(J, N, SS, sigma_G, prior_sd, skappa_X, skappa_Y,
   optim_MAP
 }
 
-
+#' Routine for finding a MASSIVE posterior local optimum
+#'
+#' @param J Integer number of candidate instruments
+#' @param N Integer number of observations
+#' @param SS Numeric moments matrix
+#' @param sigma_G Numeric vector of instrument variances
+#' @param prior_sd List containing prior hyperparameters
+#' @param skappa_X Numeric value of confounding coefficient used for initialization
+#' @param skappa_Y Numeric value of confounding coefficient used for initialization
+#' @param post_fun Function computing the negative log-posterior
+#' @param gr_fun Function computing the negative log-posterior gradient
+#' @param hess_fun Function computing the negative log-posterior Hessian
+#'
+#' @return Local posterior optimum
 find_optimum <- function(J, N, SS, sigma_G, prior_sd, skappa_X, skappa_Y, 
                          post_fun = scaled_nl_posterior_log, gr_fun = scaled_nl_gradient_log, hess_fun = scaled_nl_hessian_log) {
   
