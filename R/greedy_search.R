@@ -1,21 +1,22 @@
 
-#' Routine to perform greedy search at the beginning of MASSIVE algorithm
+#' Routine to perform greedy search at the beginning of MASSIVE algorithm.
+#' Here all the neighbors of a model are evaluated and the best one is selected
+#' for the next step if it improves the log-evidence.
 #'
-#' @param J 
-#' @param N 
-#' @param SS 
-#' @param sigma_G 
-#' @param sd_slab 
-#' @param sd_spike 
-#' @param init_model 
-#' @param get_neighbors 
-#' @param LA_function 
+#' @param J Integer number of candidate instruments
+#' @param N Integer number of observations
+#' @param SS Numeric moments matrix
+#' @param sigma_G Numeric vector of instrument variances
+#' @param sd_slab Numeric scale parameter of slab component
+#' @param sd_spike Numeric scale parameter of spike component
+#' @param init_model Character string describing initial model
+#' @param tol Numeric tolerance stopping value for optimization
+#' @param post_fun Function computing the negative log-posterior
+#' @param get_neighbors Function computing the negative log-posterior gradie
+#' @param LA_function Function computing the approximated model log-evidence
 #'
-#' @return
-#' @export
-#'
-#' @examples
-parallel_greedy_search <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.01, init_model = NULL, get_neighbors = smart_neighbor_models, LA_function = safe_smart_LA_log) {
+#' @return Character string indicating model found using greedy search
+parallel_greedy_search <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.01, init_model = NULL, get_neighbors = IV_neighbor_models, LA_function = safe_smart_LA_log) {
   
   approximations <- list()
   scores <- list()
@@ -93,7 +94,24 @@ parallel_greedy_search <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.
   list(greedy_model = current_model, approximations = approximations, models_visited = models_visited)
 }
 
-stochastic_greedy_search <- function(J, N, SS, sigma_G = NULL, sd_slab = 1, sd_spike = 0.01, init_model = NULL, get_neighbors = smart_neighbor_models, LA_function = safe_smart_LA_log) {
+#' Routine to perform greedy search at the beginning of MASSIVE algorithm.
+#' Here neighbors are examined in a random order until the first one that
+#' improves the log-evidence is found and selected.
+#'
+#' @param J Integer number of candidate instruments
+#' @param N Integer number of observations
+#' @param SS Numeric moments matrix
+#' @param sigma_G Numeric vector of instrument variances
+#' @param sd_slab Numeric scale parameter of slab component
+#' @param sd_spike Numeric scale parameter of spike component
+#' @param init_model Character string describing initial model
+#' @param tol Numeric tolerance stopping value for optimization
+#' @param post_fun Function computing the negative log-posterior
+#' @param get_neighbors Function computing the negative log-posterior gradie
+#' @param LA_function Function computing the approximated model log-evidence
+#'
+#' @return Character string indicating model found using greedy search
+stochastic_greedy_search <- function(J, N, SS, sigma_G = NULL, sd_slab = 1, sd_spike = 0.01, init_model = NULL, get_neighbors = IV_neighbor_models, LA_function = safe_smart_LA_log) {
   
   approximations <- list()
   
@@ -153,18 +171,15 @@ stochastic_greedy_search <- function(J, N, SS, sigma_G = NULL, sd_slab = 1, sd_s
   list(greedy_model = current_model, approximations = approximations, models_visited = models_visited)
 }
 
-
-neighbor_models <- function(model, J) {
-  ids <- c(1:J, (J+2):(2*J+1), 2*J+3, 2*J+5, 2*J+7)
-  
-  lapply(ids, function(idx) {
-    new_model <- model
-    substr(new_model, idx, idx) <- ifelse(substr(new_model, idx, idx) == "1", "0", "1")
-    new_model
-  })
-}
-
-smart_neighbor_models <- function(model, J) {
+#' Helper function that returns neighbors of a particular IV model.
+#'
+#' @param model Character string description of model.
+#' @param J Integer number of candidate instruments
+#'
+#' @return List of model neighbors.
+#' 
+#' @keywords internal
+IV_neighbor_models <- function(model, J) {
   # ids <- c(1:J, (J+2):(2*J+1), 2*J+3, 2*J+5)
   
   lapply((J+2):(2*J+1), function(idx) {
