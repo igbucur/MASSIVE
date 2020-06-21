@@ -1,18 +1,17 @@
 #' Routine to find the most likely causal models using a simple MH model stochastic search
 #'
-#' @param J 
-#' @param N 
-#' @param SS 
-#' @param sd_slab 
-#' @param sd_spike 
-#' @param iter 
-#' @param init_model 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-find_causal_models <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.01, stop_after = 1000, propose_model = smart_proposal,
+#' @param J Integer number of candidate instruments
+#' @param N Integer number of observations
+#' @param SS Numeric moments matrix
+#' @param sigma_G Numeric vector of instrument variances
+#' @param sd_slab Numeric scale parameter of slab component
+#' @param sd_spike Numeric scale parameter of spike componen
+#' @param max_iter Maximum number of stochastic search steps
+#' @param propose_model Function for proposing the next model in the stochastic search
+#' @param LA_function Function computing the approximated model log-evidence
+#' @param greedy_start List output of greedy search used as a starting point (optional)
+#' @param keep_greedy_approximations Logical flag specifying whether models found during greedy search should be cached
+find_causal_models <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.01, max_iter = 1000, propose_model = smart_proposal,
                                LA_function = safe_smart_LA_log, greedy_start = NULL, keep_greedy_approximations = FALSE) {
   
   if (!is.null(greedy_start)) {
@@ -44,7 +43,7 @@ find_causal_models <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.01, 
   iter_since_last_new_model <- 0
   accepted_models <- 0
   
-  while(iter < stop_after) {
+  while(iter < max_iter) {
     
     iter <- iter + 1
     iter_since_last_new_model <- iter_since_last_new_model + 1  
@@ -56,7 +55,7 @@ find_causal_models <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.01, 
       iter_since_last_new_model <- 0
       models_visited <- models_visited + 1
       print(paste("New model found at iteration", iter, ":", new_model))
-      new_model_LA <- LA_function(J, N, SS, sigma_G, par = current_model_LA$MAP, prior_sd = decode_model(new_model, sd_slab, sd_spike))
+      new_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(new_model, sd_slab, sd_spike))
       approximations[[new_model]] <- new_model_LA
     }
     
@@ -75,47 +74,6 @@ find_causal_models <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.01, 
 
 
 
-
-get_LA_posterior_samples <- function(J, N, list_models, num_samples = 10000, log_sd = TRUE) {
-  
-  models <- names(list_models)
-  model_num_samples <- round(sapply(list_models, '[[', 'posterior_probability') * num_samples)
-  # correct for inaccuracies due to rounding
-  model_num_samples[1] <- model_num_samples[1] + num_samples - sum(model_num_samples)
-  
-  spars <- do.call('rbind', lapply(1:length(model_num_samples), function(i) {
-    
-    LA <- list_models[[models[i]]]
-    LA$optima <- LA$optima[order(sapply(LA$optima, '[[', 'mixture_prob'), decreasing = T)] # TODO: move
-    
-    mixture_num_samples <- round(sapply(LA$optima, '[[', 'mixture_prob') * model_num_samples[i])
-    mixture_num_samples[1] <- mixture_num_samples[1] + model_num_samples[i] - sum(mixture_num_samples)
-    
-    do.call('rbind', lapply(1:length(mixture_num_samples), function(j) {
-      if ((n <- mixture_num_samples[j]) == 0) {
-        matrix(0, 0, 2*J+5)
-      } else {
-        MASS::mvrnorm(n = mixture_num_samples[j], mu = LA$optima[[j]]$par, Sigma = solve(LA$optima[[j]]$hessian * N))
-      }
-    }))
-  }))
-
-  if (log_sd) {
-    betas <-  spars[, 2*J+1] / exp(spars[, 2*J+4]) * exp(spars[, 2*J+5])
-  } else {
-    betas <- spars[, 2*J+1] / spars[, 2*J+4] * spars[, 2*J+5]
-  }
-  
-  
-  originating_model <- unlist(sapply(names(model_num_samples), function(model) {
-    rep(model, model_num_samples[[model]])
-  }))
-  
-  names(originating_model) <- NULL
-  originating_model <- as.factor(originating_model)
-  
-  list(spars = spars, betas = betas, originating_model = originating_model)
-}
 
 
 simple_proposal <- function(model, J) {

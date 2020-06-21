@@ -24,19 +24,17 @@ parallel_greedy_search <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.
   if (is.null(init_model)) {
     
     best_start <- which.max(c(
-      LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_full_model(J), sd_slab, sd_spike))$evidence, 
-      # LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_null_model(J), sd_slab, sd_spike))$evidence, 
-      LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_ivar_model(J), sd_slab, sd_spike))$evidence
+      LA_function(J, N, SS, sigma_G, prior_sd = decode_model(get_full_model(J), sd_slab, sd_spike))$evidence, 
+      LA_function(J, N, SS, sigma_G, prior_sd = decode_model(get_ivar_model(J), sd_slab, sd_spike))$evidence
     ))
     
     if (best_start == 1) init_model <- get_full_model(J)
-    # else if (best_start == 2) init_model <- get_null_model(J)
     else if (best_start == 2) init_model <- get_ivar_model(J)
     
   } 
   
   current_model <- init_model
-  current_model_LA <- LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(current_model, sd_slab, sd_spike))
+  current_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(current_model, sd_slab, sd_spike))
   
   print(paste("Current best model:", current_model))
   print(paste("Evidence of best model:", current_model_LA$evidence))
@@ -59,7 +57,7 @@ parallel_greedy_search <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.
         if (is.null(scores[[new_model]])) {
           #models_visited <- models_visited + 1
           #print(paste("New model found during greedy search:", new_model))
-          new_model_LA <- LA_function(J, N, SS, sigma_G, par = current_model_LA$MAP, prior_sd = decode_model(new_model, sd_slab, sd_spike))
+          new_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(new_model, sd_slab, sd_spike))
           new_score <- new_model_LA$evidence
           
           return (list(name = new_model, LA = new_model_LA))
@@ -118,19 +116,17 @@ stochastic_greedy_search <- function(J, N, SS, sigma_G = NULL, sd_slab = 1, sd_s
   if (is.null(init_model)) {
     
     best_start <- which.max(c(
-      LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_full_model(J), sd_slab, sd_spike))$evidence, 
-      # LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_null_model(J), sd_slab, sd_spike))$evidence, 
-      LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_ivar_model(J), sd_slab, sd_spike))$evidence
+      LA_function(J, N, SS, sigma_G, prior_sd = decode_model(get_full_model(J), sd_slab, sd_spike))$evidence, 
+      LA_function(J, N, SS, sigma_G, prior_sd = decode_model(get_ivar_model(J), sd_slab, sd_spike))$evidence
     ))
     
     if (best_start == 1) init_model <- get_full_model(J)
-    # else if (best_start == 2) init_model <- get_null_model(J)
     else if (best_start == 2) init_model <- get_ivar_model(J)
     
   } 
   
   current_model <- init_model
-  current_model_LA <- LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(current_model, sd_slab, sd_spike))
+  current_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(current_model, sd_slab, sd_spike))
   
   print(paste("Current best model:", current_model))
   print(paste("Evidence of best model:", current_model_LA$evidence))
@@ -150,7 +146,7 @@ stochastic_greedy_search <- function(J, N, SS, sigma_G = NULL, sd_slab = 1, sd_s
       if (is.null(approximations[[new_model]])) {
         models_visited <- models_visited + 1
         
-        new_model_LA <- LA_function(J, N, SS, sigma_G, par = current_model_LA$MAP, prior_sd = decode_model(new_model, sd_slab, sd_spike))
+        new_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(new_model, sd_slab, sd_spike))
         approximations[[new_model]] <- new_model_LA
         # print(paste("New model found during greedy search:", new_model))
         # print(paste("Evidence of new model:", new_model_LA$evidence))

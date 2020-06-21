@@ -11,7 +11,7 @@ find_causal_models(
   sigma_G,
   sd_slab = 1,
   sd_spike = 0.01,
-  stop_after = 1000,
+  max_iter = 1000,
   propose_model = smart_proposal,
   LA_function = safe_smart_LA_log,
   greedy_start = NULL,
@@ -19,22 +19,27 @@ find_causal_models(
 )
 }
 \arguments{
-\item{J}{}
+\item{J}{Integer number of candidate instruments}
 
-\item{N}{}
+\item{N}{Integer number of observations}
 
-\item{SS}{}
+\item{SS}{Numeric moments matrix}
 
-\item{sd_slab}{}
+\item{sigma_G}{Numeric vector of instrument variances}
 
-\item{sd_spike}{}
+\item{sd_slab}{Numeric scale parameter of slab component}
 
-\item{iter}{}
+\item{sd_spike}{Numeric scale parameter of spike componen}
 
-\item{init_model}{}
-}
-\value{
+\item{max_iter}{Maximum number of stochastic search steps}
 
+\item{propose_model}{Function for proposing the next model in the stochastic search}
+
+\item{LA_function}{Function computing the approximated model log-evidence}
+
+\item{greedy_start}{List output of greedy search used as a starting point (optional)}
+
+\item{keep_greedy_approximations}{Logical flag specifying whether models found during greedy search should be cached}
 }
 \description{
 Routine to find the most likely causal models using a simple MH model stochastic search

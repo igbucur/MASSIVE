@@ -4,7 +4,6 @@ scaled_nl_posterior_log <- function(J, N, SS, sigma_G, param_list, prior_sd, n =
   param_list$sigma_X <- exp(param_list$sigma_X)
   param_list$sigma_Y <- exp(param_list$sigma_Y)
   post <- scaled_nl_posterior_MR(J, N, SS, sigma_G, param_list, prior_sd, n)
-  # print(paste("sbeta", param_list$sbeta, "skappa_X", param_list$skappa_X, "skappa_Y", param_list$skappa_Y, "post", post))
   post
 }
 
