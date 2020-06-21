@@ -412,29 +412,3 @@ smarting_points <- function(SS, sigma_G = binomial_sigma_G(SS)) {
 
 
 
-
-
-compare_and_select_models <- function(discovered_models, prob_threshold = 1e-4) {
-  
-  log_evidences <- sapply(discovered_models$approximations, '[[', 'evidence')
-  print(paste("Best model found has log evidence:", max(log_evidences)))
-  bayes_factors <- exp(log_evidences - max(log_evidences))
-  probabilities <- sort(bayes_factors / sum(bayes_factors), decreasing = T)
-  
-  # Prune models until the one with the lowest probability makes up for at least 
-  # 3e-3 probability, equivalent to 30 out of 10000 samples
-  index <- length(probabilities)
-  while(probabilities[index] / sum(probabilities[1:(index-1)]) < prob_threshold) {
-    index <- index - 1
-  }
-  
-  final_probabilities <- probabilities[1:index] / sum(probabilities[1:index])
-  
-  promising_models <- discovered_models$approximations[names(final_probabilities)]
-  for (model in names(final_probabilities)) {
-    promising_models[[model]]$posterior_probability <- final_probabilities[[model]]
-  }
-  promising_models
-}
-
-
