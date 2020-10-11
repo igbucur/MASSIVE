@@ -2,7 +2,8 @@
 % Please edit documentation in R/MC3_sampler.R
 \name{find_causal_models}
 \alias{find_causal_models}
-\title{Routine to find the most likely causal models using a simple MH model stochastic search}
+\title{Routine to find the most likely causal models using a simple Metropolis-
+Hastings IV model stochastic search}
 \usage{
 find_causal_models(
   J,
@@ -19,28 +20,43 @@ find_causal_models(
 )
 }
 \arguments{
-\item{J}{Integer number of candidate instruments}
+\item{J}{Integer number of candidate instruments.}
 
-\item{N}{Integer number of observations}
+\item{N}{Integer number of observations.}
 
-\item{SS}{Numeric moments matrix}
+\item{SS}{Numeric matrix containing first- and second-order statistics.}
 
-\item{sigma_G}{Numeric vector of instrument variances}
+\item{sigma_G}{Numeric vector of genetic IV standard deviations.}
 
-\item{sd_slab}{Numeric scale parameter of slab component}
+\item{sd_slab}{Numeric scale parameter of slab component.}
 
-\item{sd_spike}{Numeric scale parameter of spike componen}
+\item{sd_spike}{Numeric scale parameter of spike component.}
 
-\item{max_iter}{Maximum number of stochastic search steps}
+\item{max_iter}{Integer defining maximum number of MCMC iterations.}
 
-\item{propose_model}{Function for proposing the next model in the stochastic search}
+\item{propose_model}{Proposal function indicating new IV model candidates.}
 
-\item{LA_function}{Function computing the approximated model log-evidence}
+\item{LA_function}{Function for computing the IV model Laplace approximation.}
 
-\item{greedy_start}{List output of greedy search used as a starting point (optional)}
+\item{greedy_start}{List returned by greedy search to be used as starting point.}
 
-\item{keep_greedy_approximations}{Logical flag specifying whether models found during greedy search should be cached}
+\item{keep_greedy_approximations}{Logical flag asking if greedy search history
+should be stored and used in the new MCMC search.}
+}
+\value{
+A list containing the list of models explored and their approximations,
+the number of models explored, the total number of MCMC iterations, as well
+as the acceptance rate.
 }
 \description{
-Routine to find the most likely causal models using a simple MH model stochastic search
+Routine to find the most likely causal models using a simple Metropolis-
+Hastings IV model stochastic search
+}
+\examples{
+J <- 5 # number of instruments
+N <- 1000 # number of samples
+parameters <- random_Gaussian_parameters(J) 
+EAF <- runif(J, 0.1, 0.9) # EAF random values
+dat <- gen_data_miv_sem(N, n, EAF, parameters)
+find_causal_models(J, N, dat$ESS, binomial_sigma_G(dat$ESS), 1, 0.01)
 }

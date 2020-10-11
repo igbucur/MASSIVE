@@ -2,9 +2,7 @@
 % Please edit documentation in R/greedy_search.R
 \name{parallel_greedy_search}
 \alias{parallel_greedy_search}
-\title{Routine to perform greedy search at the beginning of MASSIVE algorithm.
-Here all the neighbors of a model are evaluated and the best one is selected
-for the next step if it improves the log-evidence.}
+\title{Routine to perform greedy search at the beginning of MASSIVE algorithm}
 \usage{
 parallel_greedy_search(
   J,
@@ -14,38 +12,44 @@ parallel_greedy_search(
   sd_slab = 1,
   sd_spike = 0.01,
   init_model = NULL,
-  get_neighbors = IV_neighbor_models,
+  get_neighbors = smart_neighbor_models,
   LA_function = safe_smart_LA_log
 )
 }
 \arguments{
-\item{J}{Integer number of candidate instruments}
+\item{J}{Integer number of candidate instruments..}
 
-\item{N}{Integer number of observations}
+\item{N}{Integer number of observations.}
 
-\item{SS}{Numeric moments matrix}
+\item{SS}{Numeric matrix containing first- and second-order statistics.}
 
-\item{sigma_G}{Numeric vector of instrument variances}
+\item{sigma_G}{Numeric vector of genetic IV standard deviations.}
 
-\item{sd_slab}{Numeric scale parameter of slab component}
+\item{sd_slab}{Numeric scale parameter of slab component.}
 
-\item{sd_spike}{Numeric scale parameter of spike component}
+\item{sd_spike}{Numeric scale parameter of spike component.}
 
-\item{init_model}{Character string describing initial model}
+\item{init_model}{Character vector describing starting IV model in search.}
 
-\item{get_neighbors}{Function computing the negative log-posterior gradie}
+\item{get_neighbors}{Function to get neighbor IV models at every step.}
 
-\item{LA_function}{Function computing the approximated model log-evidence}
-
-\item{tol}{Numeric tolerance stopping value for optimization}
-
-\item{post_fun}{Function computing the negative log-posterior}
+\item{LA_function}{Function for computing the IV model Laplace approximation}
 }
 \value{
-Character string indicating model found using greedy search
+A list containing the optimum found with greedy search, the list of
+IV models visited and their approximations, and the number of visited models.
 }
 \description{
-Routine to perform greedy search at the beginning of MASSIVE algorithm.
-Here all the neighbors of a model are evaluated and the best one is selected
-for the next step if it improves the log-evidence.
+At each greedy step, we examine all of the IV models in the
+neighbor set in parallel. The neighbor with the highest model evidence is
+chosen and the algorithm moves to it if the evidence is higher compared to
+the current IV model.
+}
+\examples{
+J <- 5 # number of instruments
+N <- 1000 # number of samples
+parameters <- random_Gaussian_parameters(J) 
+EAF <- runif(J, 0.1, 0.9) # EAF random values
+dat <- gen_data_miv_sem(N, 2, EAF, parameters)
+parallel_greedy_search(J, N, dat$ESS, binomial_sigma_G(dat$ESS), 1, 0.01)
 }

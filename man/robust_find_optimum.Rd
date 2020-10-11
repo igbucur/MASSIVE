@@ -2,7 +2,8 @@
 % Please edit documentation in R/find_posterior_optima.R
 \name{robust_find_optimum}
 \alias{robust_find_optimum}
-\title{Routine for (more robustly) finding a MASSIVE posterior local optimum}
+\title{Routine for more robust local optimum search of MASSIVE posterior, where
+the search is repeated until a better value cannot be found any more.}
 \usage{
 robust_find_optimum(
   J,
@@ -19,31 +20,41 @@ robust_find_optimum(
 )
 }
 \arguments{
-\item{J}{Integer number of candidate instruments}
+\item{J}{Integer number of genetic instrumental variables.}
 
-\item{N}{Integer number of observations}
+\item{N}{Integer number of observations.}
 
-\item{SS}{Numeric moments matrix}
+\item{SS}{Numeric matrix containing first- and second-order statistics.}
 
-\item{sigma_G}{Numeric vector of instrument variances}
+\item{sigma_G}{Numeric vector of genetic IV standard deviations.}
 
-\item{prior_sd}{List containing prior hyperparameters}
+\item{prior_sd}{List of standard deviations for the parameter Gaussian priors.}
 
-\item{skappa_X}{Numeric value of confounding coefficient used for initialization}
+\item{skappa_X}{Scale-free confounding coefficient to exposure used for initialization.}
 
-\item{skappa_Y}{Numeric value of confounding coefficient used for initialization}
+\item{skappa_Y}{Scale-free confounding coefficient to outcome used for initialization.}
 
-\item{tol}{Numeric tolerance stopping value for optimization}
+\item{tol}{Numeric tolerance value used to decide if a better optimum was found.}
 
-\item{post_fun}{Function computing the negative log-posterior}
+\item{post_fun}{Function for computing the IV model posterior value.}
 
-\item{gr_fun}{Function computing the negative log-posterior gradient}
+\item{gr_fun}{Function for computing the IV model posterior gradient.}
 
-\item{hess_fun}{Function computing the negative log-posterior Hessian}
+\item{hess_fun}{Function for computing the IV model posterior Hessian.}
 }
 \value{
-Local posterior optimum
+optim object (see \link[stats]{optim} containing optimum parameters,
+the value obtained at the optimum, and the Hessian at the optimum.
 }
 \description{
-Routine for (more robustly) finding a MASSIVE posterior local optimum
+Routine for more robust local optimum search of MASSIVE posterior, where
+the search is repeated until a better value cannot be found any more.
+}
+\examples{
+J <- 5 # number of instruments
+N <- 1000 # number of samples
+parameters <- random_Gaussian_parameters(J) 
+EAF <- runif(J, 0.1, 0.9) # EAF random values
+dat <- gen_data_miv_sem(N, 2, EAF, parameters)
+robust_find_optimum(J, N, dat$ESS, binomial_sigma_G(dat$ESS), decode_model(get_ply_model(J), 1, 0.01), skappa_X = 1, skappa_Y = 1)
 }

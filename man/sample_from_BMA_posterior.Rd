@@ -13,18 +13,18 @@ sample_from_BMA_posterior(
 )
 }
 \arguments{
-\item{J}{Integer number of candidate instruments}
+\item{J}{Integer number of candidate instruments.}
 
-\item{N}{Integer number of observations}
+\item{N}{Integer number of observations.}
 
 \item{list_models}{List of IV models found by running MASSIVE}
 
-\item{num_samples}{}
+\item{num_samples}{Integer number of samples to generate.}
 
-\item{log_sd}{}
+\item{log_sd}{Flag indicating whether scale parameters are given in log-scale.}
 }
 \value{
-List containing samples from BMA posterior
+List containing samples from BMA posterior.
 }
 \description{
 Sample from BMA posterior derived using the MASSIVE approach
