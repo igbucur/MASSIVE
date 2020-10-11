@@ -1,6 +1,9 @@
 
 
-#' Routine for computing the Laplace approximation of the MASSIVE posterior
+#' Routine for computing the Laplace approximation of the MASSIVE posterior using
+#' smart initialization points to find all the conjectured optima. This 'safe'
+#' version provides a fail-safe in case no optima are found with the smart 
+#' initialization, in which case the "guess" strategy is used instead.
 #'
 #' @param J Integer number of candidate instrumental variables.
 #' @param N Integer number of observations.
@@ -44,6 +47,23 @@ safe_smart_LA_log <- function(J, N, SS, sigma_G, prior_sd,
   )
 }
 
+#' Title
+#'
+#' @param J 
+#' @param N 
+#' @param SS 
+#' @param sigma_G 
+#' @param prior_sd 
+#' @param post_fun 
+#' @param gr_fun 
+#' @param hess_fun 
+#' @param opt_fun 
+#' @param starting_points 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 robust_safe_smart_LA_log <- function(J, N, SS, sigma_G, prior_sd, 
                               post_fun = scaled_nl_posterior_log, 
                               gr_fun = scaled_nl_gradient_log, 
@@ -58,7 +78,37 @@ robust_safe_smart_LA_log <- function(J, N, SS, sigma_G, prior_sd,
   )
 }
 
-
+#' Routine for computing the Laplace approximation of the MASSIVE posterior using
+#' smart initialization points to find all the conjectured optima.
+#'
+#' @param J Integer number of candidate instrumental variables.
+#' @param N Integer number of observations.
+#' @param SS Numeric matrix containing first- and second-order statistics.
+#' @param sigma_G Numeric vector of instrument standard deviations.
+#' @param prior_sd List of standard deviations for the parameter Gaussian priors.
+#' @param post_fun Function for computing the IV model posterior value.
+#' @param gr_fun Function for computing the IV model posterior gradient.
+#' @param hess_fun Function for computing the IV model posterior Hessian.
+#' @param opt_fun Function for finding the IV model posterior optima.
+#' @param starting_points Character vector indicating how to pick the starting
+#' points: "smart" or "guess" strategy?
+#'
+#' @return A list containing the Laplace approximation.
+#' \itemize{
+#'   \item optima - List of optima found.
+#'   \item num_optima - Number of optima found on the posterior surface.
+#'   \item evidence - Numeric value of total approximation model evidence.
+#' }
+#' 
+#' @export
+#'
+#' @examples
+#' J <- 5 # number of instruments
+#' N <- 1000 # number of samples
+#' parameters <- random_Gaussian_parameters(J) 
+#' EAF <- runif(J, 0.1, 0.9) # EAF random values
+#' dat <- gen_data_miv_sem(N, n, EAF, parameters)
+#' safe_smart_LA_log(J, N, dat$ESS, binomial_sigma_G(dat$ESS), decode_model(get_ply_model(J), 1, 0.01))
 smart_LA_log <- function(J, N, SS, sigma_G, prior_sd, 
                          post_fun = scaled_nl_posterior_log, 
                          gr_fun = scaled_nl_gradient_log, 
