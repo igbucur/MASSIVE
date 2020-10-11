@@ -6,12 +6,12 @@
 #' chosen and the algorithm moves to it if the evidence is higher compared to
 #' the current IV model.
 #'
-#' @param J Integer number of genetic instrumental variables.
+#' @param J Integer number of candidate instruments..
 #' @param N Integer number of observations.
 #' @param SS Numeric matrix containing first- and second-order statistics.
 #' @param sigma_G Numeric vector of genetic IV standard deviations.
-#' @param sd_slab Numeric value representing slab component standard deviation.
-#' @param sd_spike Numeric value representing spike component standard deviation.
+#' @param sd_slab Numeric scale parameter of slab component.
+#' @param sd_spike Numeric scale parameter of spike component.
 #' @param init_model Character vector describing starting IV model in search.
 #' @param get_neighbors Function to get neighbor IV models at every step.
 #' @param LA_function Function for computing the IV model Laplace approximation
@@ -26,7 +26,7 @@
 #' N <- 1000 # number of samples
 #' parameters <- random_Gaussian_parameters(J) 
 #' EAF <- runif(J, 0.1, 0.9) # EAF random values
-#' dat <- gen_data_miv_sem(N, n, EAF, parameters)
+#' dat <- gen_data_miv_sem(N, 2, EAF, parameters)
 #' parallel_greedy_search(J, N, dat$ESS, binomial_sigma_G(dat$ESS), 1, 0.01)
 parallel_greedy_search <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.01, init_model = NULL, get_neighbors = smart_neighbor_models, LA_function = safe_smart_LA_log) {
   
@@ -36,9 +36,8 @@ parallel_greedy_search <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.
   if (is.null(init_model)) {
     
     best_start <- which.max(c(
-      LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_full_model(J), sd_slab, sd_spike))$evidence, 
-      # LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_null_model(J), sd_slab, sd_spike))$evidence, 
-      LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_ivar_model(J), sd_slab, sd_spike))$evidence
+      LA_function(J, N, SS, sigma_G, prior_sd = decode_model(get_full_model(J), sd_slab, sd_spike))$evidence, 
+      LA_function(J, N, SS, sigma_G, prior_sd = decode_model(get_ivar_model(J), sd_slab, sd_spike))$evidence
     ))
     
     if (best_start == 1) init_model <- get_full_model(J)
@@ -48,7 +47,7 @@ parallel_greedy_search <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.
   } 
   
   current_model <- init_model
-  current_model_LA <- LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(current_model, sd_slab, sd_spike))
+  current_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(current_model, sd_slab, sd_spike))
   
   print(paste("Current best model:", current_model))
   print(paste("Evidence of best model:", current_model_LA$evidence))
@@ -65,13 +64,10 @@ parallel_greedy_search <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.
     
     candidates <- get_neighbors(current_model, J)
     
-    # min(parallel::detectCores() / 2, length(candidates))
     new_approximations <- parallel::mclapply(
       candidates, function(new_model) {
         if (is.null(scores[[new_model]])) {
-          #models_visited <- models_visited + 1
-          #print(paste("New model found during greedy search:", new_model))
-          new_model_LA <- LA_function(J, N, SS, sigma_G, par = current_model_LA$MAP, prior_sd = decode_model(new_model, sd_slab, sd_spike))
+          new_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(new_model, sd_slab, sd_spike))
           new_score <- new_model_LA$evidence
           
           return (list(name = new_model, LA = new_model_LA))
@@ -100,7 +96,6 @@ parallel_greedy_search <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.
     print(paste("Current best model:", current_model))
     print(paste("Evidence of best model:", current_model_LA$evidence))
     
-    # if (any(new_scores > scores[[current_model]]))
   }
   
   list(greedy_model = current_model, approximations = approximations, models_visited = models_visited)
@@ -112,12 +107,12 @@ parallel_greedy_search <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.
 #' set one by one. As soon as one has higher evidence than the current IV model,
 #' we greedily move to the better neighbor.
 #'
-#' @param J Integer number of genetic instrumental variables.
+#' @param J Integer number of candidate instruments..
 #' @param N Integer number of observations.
 #' @param SS Numeric matrix containing first- and second-order statistics.
 #' @param sigma_G Numeric vector of genetic IV standard deviations.
-#' @param sd_slab Numeric value representing slab component standard deviation.
-#' @param sd_spike Numeric value representing spike component standard deviation.
+#' @param sd_slab Numeric scale parameter of slab component.
+#' @param sd_spike Numeric scale parameter of spike component.
 #' @param init_model Character vector describing starting IV model in search.
 #' @param get_neighbors Function to get neighbor IV models at every step.
 #' @param LA_function Function for computing the IV model Laplace approximation
@@ -141,9 +136,8 @@ stochastic_greedy_search <- function(J, N, SS, sigma_G = NULL, sd_slab = 1, sd_s
   if (is.null(init_model)) {
     
     best_start <- which.max(c(
-      LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_full_model(J), sd_slab, sd_spike))$evidence, 
-      # LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_null_model(J), sd_slab, sd_spike))$evidence, 
-      LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_ivar_model(J), sd_slab, sd_spike))$evidence
+      LA_function(J, N, SS, sigma_G, prior_sd = decode_model(get_full_model(J), sd_slab, sd_spike))$evidence, 
+      LA_function(J, N, SS, sigma_G, prior_sd = decode_model(get_ivar_model(J), sd_slab, sd_spike))$evidence
     ))
     
     if (best_start == 1) init_model <- get_full_model(J)
@@ -153,7 +147,7 @@ stochastic_greedy_search <- function(J, N, SS, sigma_G = NULL, sd_slab = 1, sd_s
   } 
   
   current_model <- init_model
-  current_model_LA <- LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(current_model, sd_slab, sd_spike))
+  current_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(current_model, sd_slab, sd_spike))
   
   print(paste("Current best model:", current_model))
   print(paste("Evidence of best model:", current_model_LA$evidence))
@@ -173,7 +167,7 @@ stochastic_greedy_search <- function(J, N, SS, sigma_G = NULL, sd_slab = 1, sd_s
       if (is.null(approximations[[new_model]])) {
         models_visited <- models_visited + 1
         
-        new_model_LA <- LA_function(J, N, SS, sigma_G, par = current_model_LA$MAP, prior_sd = decode_model(new_model, sd_slab, sd_spike))
+        new_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(new_model, sd_slab, sd_spike))
         approximations[[new_model]] <- new_model_LA
         # print(paste("New model found during greedy search:", new_model))
         # print(paste("Evidence of new model:", new_model_LA$evidence))
@@ -206,14 +200,10 @@ neighbor_models <- function(model, J) {
 }
 
 smart_neighbor_models <- function(model, J) {
-  # ids <- c(1:J, (J+2):(2*J+1), 2*J+3, 2*J+5)
   
   lapply((J+2):(2*J+1), function(idx) {
     new_model <- model
     substr(new_model, idx, idx) <- ifelse(substr(new_model, idx, idx) == "1", "0", "1")
-    # if (idx == 2*J+5) {
-    #   substr(new_model, idx+2, idx+2) <- substr(new_model, idx, idx) # couple confounding coefficients
-    # }
     new_model
   })
 }

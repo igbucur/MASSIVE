@@ -2,10 +2,10 @@
 
 #' Routine for computing the Laplace approximation of the MASSIVE posterior
 #'
-#' @param J Integer number of genetic instrumental variables.
+#' @param J Integer number of candidate instrumental variables.
 #' @param N Integer number of observations.
 #' @param SS Numeric matrix containing first- and second-order statistics.
-#' @param sigma_G Numeric vector of genetic IV standard deviations.
+#' @param sigma_G Numeric vector of instrument standard deviations.
 #' @param prior_sd List of standard deviations for the parameter Gaussian priors.
 #' @param post_fun Function for computing the IV model posterior value.
 #' @param gr_fun Function for computing the IV model posterior gradient.
@@ -42,7 +42,6 @@ safe_smart_LA_log <- function(J, N, SS, sigma_G, prior_sd,
       smart_LA_log(J, N, SS, sigma_G, prior_sd, post_fun, gr_fun, hess_fun, opt_fun, "guess")
     }
   )
-  #  out
 }
 
 robust_safe_smart_LA_log <- function(J, N, SS, sigma_G, prior_sd, 
@@ -57,7 +56,6 @@ robust_safe_smart_LA_log <- function(J, N, SS, sigma_G, prior_sd,
       smart_LA_log(J, N, SS, sigma_G, prior_sd, post_fun, gr_fun, hess_fun, opt_fun, "guess")
     }
   )
- #  out
 }
 
 
@@ -66,9 +64,7 @@ smart_LA_log <- function(J, N, SS, sigma_G, prior_sd,
                          gr_fun = scaled_nl_gradient_log, 
                          hess_fun = scaled_nl_hessian_log, 
                          opt_fun = robust_find_optimum, starting_points = "smart") {
-  
-  # TODO: maybe add optimization using 'par' as starting point
-  
+
   if (starting_points == "guess") {
     starting_points <- list(
       c(prior_sd$sd_spike, prior_sd$sd_spike),
@@ -113,16 +109,6 @@ smart_LA_log <- function(J, N, SS, sigma_G, prior_sd,
       
       for (j in 1:length(unique_results)) {
         u <- unique_results[[j]]
-        # print(str(u))
-        
-        # found a scenario where the first two statements did not hold, but it seemed to be the same minimum
-        
-        # if (round(u$par[2*J+2], 3) == round(r$par[2*J+2], 3) &&
-        #     round(u$par[2*J+3], 3) == round(r$par[2*J+3], 3) &&
-        #     round(u$value, 3) == round(r$value, 3)) {
-        #   unique <- FALSE
-        #   break
-        # }
         
         # Various situations could occur
         diff_par <- abs(u$par - r$par)
@@ -137,49 +123,30 @@ smart_LA_log <- function(J, N, SS, sigma_G, prior_sd,
       if (unique) {
         unique_results[[length(unique_results) + 1]] <- r
       } else {
+        
         # choose the one with the smaller nl_post value
         if (u$value > r$value) {
           unique_results[[j]] <- r
         }
-        
-        
-        # sometimes two optima are found very close to each other with significantly different hessians
-        # in this case we pick the one with less curvature (higher evidence), since it is probably less
-        # prone to numerical errors and encompasses the other optimum as well
-        # if (u$LA < r$LA) {
-        #   unique_results[[j]] <- r
-        # }
-        # unique_results[[j]]$LA <- max(u$LA, r$LA)
       }
     }
     
     unique_results
   }  
 
-  is_posdef <- function(h, tol = 1e-08) {
-    eigenvalues <- eigen(h, only.values = TRUE)$values
-    n <- nrow(h)
-    for (i in 1:n) {
-      if (abs(eigenvalues[i]) < tol) {
-        eigenvalues[i] <- 0
-      }
-    }
-    if (any(eigenvalues <= 0)) {
-      return(FALSE)
-    }
-    return(TRUE)
-  }
   
-  # print(length(results))
+  is_positive_definite <- function(hessian, tol = 1e-08) {
+    eigenvalues <- eigen(hessian, only.values = TRUE)$values
+    
+    eigenvalues <- ifelse(abs(eigenvalues) < tol, 0, eigenvalues)
+    
+    all(eigenvalues > 0)
+  }
   
   # compute the mixture of Laplace approximations
   for (i in 1:length(results)) {
     
-    # symmetrize again because is.positive.definite is stupid
-    # results[[i]]$hessian <- (results[[i]]$hessian + t(results[[i]]$hessian)) / 2
-    # print(is_posdef(results[[i]]$hessian, 1e-8))
-    
-    if(is_posdef(results[[i]]$hessian, 1e-8)) {
+    if(is_positive_definite(results[[i]]$hessian, 1e-8)) {
       det_optim <- determinant(results[[i]]$hessian)
       attr(det_optim$modulus, "logarithm") <- NULL
       results[[i]]$LA <- - N * results[[i]]$value - 0.5 * (det_optim$modulus + (2 * J + 5) * log(N)) + (2 * J + 5) / 2 * log(2 * pi)
@@ -196,14 +163,8 @@ smart_LA_log <- function(J, N, SS, sigma_G, prior_sd,
     }
   }
   
-  
   results <- results[!is.na(results)] # remove saddle points
-  stopifnot(length(results) > 0)
-  # if (length(results) == 0) {
-  #   error("No optima found")
-  # return(optima = list(), num_optima = 0, evidence = -Inf)
-  # }
-  
+  if (length(results) == 0) stop("No local optima found")
   
   results <- remove_duplicates(results)
   results <- results[order(sapply(results, '[[', 'value'))] # sort results by decreasing posterior value
@@ -214,6 +175,5 @@ smart_LA_log <- function(J, N, SS, sigma_G, prior_sd,
     results[[i]]$mixture_prob <- exp(results[[i]]$LA - total_evidence)
   }
   
-  # posterior_Gaussian_MR(J, N, SS, MAP, prior_sd, n)
   list(optima = results, num_optima = length(results), evidence = total_evidence)
 }

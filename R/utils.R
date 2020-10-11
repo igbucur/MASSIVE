@@ -332,30 +332,6 @@ smarting_points <- function(SS, sigma_G = binomial_sigma_G(SS)) {
 
 
 
-
-compare_and_select_models <- function(discovered_models, prob_threshold = 1e-4) {
-  
-  log_evidences <- sapply(discovered_models$approximations, '[[', 'evidence')
-  print(paste("Best model found has log evidence:", max(log_evidences)))
-  bayes_factors <- exp(log_evidences - max(log_evidences))
-  probabilities <- sort(bayes_factors / sum(bayes_factors), decreasing = T)
-  
-  # Prune models until the one with the lowest probability makes up for at least 
-  # 3e-3 probability, equivalent to 30 out of 10000 samples
-  index <- length(probabilities)
-  while(probabilities[index] / sum(probabilities[1:(index-1)]) < prob_threshold) {
-    index <- index - 1
-  }
-  
-  final_probabilities <- probabilities[1:index] / sum(probabilities[1:index])
-  
-  promising_models <- discovered_models$approximations[names(final_probabilities)]
-  for (model in names(final_probabilities)) {
-    promising_models[[model]]$posterior_probability <- final_probabilities[[model]]
-  }
-  promising_models
-}
-
 table_view <- function(list_models, J) {
   
   par_names <- c(
@@ -395,3 +371,10 @@ table_view <- function(list_models, J) {
   }))
 }
 
+
+analyze_MASSIVE_output <- function(MASSIVE_result, J, N, pruning_threshold = 3e-3) {
+  MASSIVE_models <- compare_and_select_models(MASSIVE_result, prob_threshold = pruning_threshold)
+  beta_samples <- get_LA_posterior_samples(J, N, MASSIVE_models, 1e5)
+  plot(density(beta_samples$betas, bw = 0.01))
+  analyze_model_approximations(MASSIVE_models)
+}

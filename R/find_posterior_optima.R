@@ -1,13 +1,14 @@
 
-#' Routine for (more robustly) finding a MASSIVE posterior local optimum
+#' Routine for more robust local optimum search of MASSIVE posterior, where
+#' the search is repeated until a better value cannot be found any more.
 #'
 #' @param J Integer number of genetic instrumental variables.
 #' @param N Integer number of observations.
 #' @param SS Numeric matrix containing first- and second-order statistics.
 #' @param sigma_G Numeric vector of genetic IV standard deviations.
 #' @param prior_sd List of standard deviations for the parameter Gaussian priors.
-#' @param skappa_X Scale-free confounding coefficient from confounder to exposure.
-#' @param skappa_Y Scale-free confounding coefficient from confounder to outcome.
+#' @param skappa_X Scale-free confounding coefficient to exposure used for initialization.
+#' @param skappa_Y Scale-free confounding coefficient to outcome used for initialization.
 #' @param tol Numeric tolerance value used to decide if a better optimum was found.
 #' @param post_fun Function for computing the IV model posterior value.
 #' @param gr_fun Function for computing the IV model posterior gradient.
@@ -22,7 +23,7 @@
 #' N <- 1000 # number of samples
 #' parameters <- random_Gaussian_parameters(J) 
 #' EAF <- runif(J, 0.1, 0.9) # EAF random values
-#' dat <- gen_data_miv_sem(N, n, EAF, parameters)
+#' dat <- gen_data_miv_sem(N, 2, EAF, parameters)
 #' robust_find_optimum(J, N, dat$ESS, binomial_sigma_G(dat$ESS), decode_model(get_ply_model(J), 1, 0.01), skappa_X = 1, skappa_Y = 1)
 robust_find_optimum <- function(J, N, SS, sigma_G, prior_sd, skappa_X, skappa_Y, tol = 1e-6,
                          post_fun = scaled_nl_posterior_log, gr_fun = scaled_nl_gradient_log, hess_fun = scaled_nl_hessian_log) {
@@ -78,6 +79,31 @@ robust_find_optimum <- function(J, N, SS, sigma_G, prior_sd, skappa_X, skappa_Y,
 }
 
 
+#' Routine for finding MASSIVE posterior local optimum.
+#'
+#' @param J Integer number of genetic instrumental variables.
+#' @param N Integer number of observations.
+#' @param SS Numeric matrix containing first- and second-order statistics.
+#' @param sigma_G Numeric vector of genetic IV standard deviations.
+#' @param prior_sd List of standard deviations for the parameter Gaussian priors.
+#' @param skappa_X Scale-free confounding coefficient to exposure used for initialization.
+#' @param skappa_Y Scale-free confounding coefficient to outcome used for initialization.
+#' @param tol Numeric tolerance value used to decide if a better optimum was found.
+#' @param post_fun Function for computing the IV model posterior value.
+#' @param gr_fun Function for computing the IV model posterior gradient.
+#' @param hess_fun Function for computing the IV model posterior Hessian.
+#'
+#' @return optim object (see \link[stats]{optim} containing optimum parameters, 
+#' the value obtained at the optimum, and the Hessian at the optimum.
+#' @export
+#'
+#' @examples
+#' J <- 5 # number of instruments
+#' N <- 1000 # number of samples
+#' parameters <- random_Gaussian_parameters(J) 
+#' EAF <- runif(J, 0.1, 0.9) # EAF random values
+#' dat <- gen_data_miv_sem(N, 2, EAF, parameters)
+#' find_optimum(J, N, dat$ESS, binomial_sigma_G(dat$ESS), decode_model(get_ply_model(J), 1, 0.01), skappa_X = 1, skappa_Y = 1)
 find_optimum <- function(J, N, SS, sigma_G, prior_sd, skappa_X, skappa_Y, 
                          post_fun = scaled_nl_posterior_log, gr_fun = scaled_nl_gradient_log, hess_fun = scaled_nl_hessian_log) {
   
@@ -112,3 +138,4 @@ find_optimum <- function(J, N, SS, sigma_G, prior_sd, skappa_X, skappa_Y,
   
   optim_MAP
 }
+
