@@ -1,4 +1,6 @@
 
+c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
 # Parameter container conversion ------------------------------------------
 
 parameter_vector_to_list <- function(param_vector) {
@@ -28,13 +30,13 @@ parameter_list_to_vector <- function(param_list) {
 }
 
 random_Gaussian_parameters_log <- function(J) {
-  sgamma <- rnorm(J)
-  salpha <- rnorm(J)
-  sbeta <- rnorm(1)
-  skappa_X <- rnorm(1)
-  skappa_Y <- rnorm(1)
-  sigma_X <- rnorm(1)
-  sigma_Y <- rnorm(1)
+  sgamma <- stats::rnorm(J)
+  salpha <- stats::rnorm(J)
+  sbeta <- stats::rnorm(1)
+  skappa_X <- stats::rnorm(1)
+  skappa_Y <- stats::rnorm(1)
+  sigma_X <- stats::rnorm(1)
+  sigma_Y <- stats::rnorm(1)
   
   list(
     sgamma = sgamma, 
@@ -48,13 +50,13 @@ random_Gaussian_parameters_log <- function(J) {
 }
 
 random_Gaussian_parameters <- function(J) {
-  sgamma <- rnorm(J)
-  salpha <- rnorm(J)
-  sbeta <- rnorm(1)
-  skappa_X <- rnorm(1)
-  skappa_Y <- rnorm(1)
-  sigma_X <- exp(rnorm(1))
-  sigma_Y <- exp(rnorm(1))
+  sgamma <- stats::rnorm(J)
+  salpha <- stats::rnorm(J)
+  sbeta <- stats::rnorm(1)
+  skappa_X <- stats::rnorm(1)
+  skappa_Y <- stats::rnorm(1)
+  sigma_X <- exp(stats::rnorm(1))
+  sigma_Y <- exp(stats::rnorm(1))
   
   list(
     sgamma = sgamma, 
@@ -81,8 +83,8 @@ MR_regression_coefficients_to_moments <- function(J, beta_XG, sigma_XG, nobs_XG,
   SSS[J+2, 2:(J+1)] <- SSS[2:(J+1), J+2] <- SSS[2:(J+1), 2:(J+1)] %*% beta_XG
   SSS[J+3, 2:(J+1)] <- SSS[2:(J+1), J+3] <- SSS[2:(J+1), 2:(J+1)] %*% beta_YG
   
-  est_var_X <- median((beta_XG^2 + sigma_XG^2 * nobs_XG) * n * EAF * (1 - EAF))
-  est_var_Y <- median((beta_YG^2 + sigma_YG^2 * nobs_YG) * n * EAF * (1 - EAF))
+  est_var_X <- stats::median((beta_XG^2 + sigma_XG^2 * nobs_XG) * n * EAF * (1 - EAF))
+  est_var_Y <- stats::median((beta_YG^2 + sigma_YG^2 * nobs_YG) * n * EAF * (1 - EAF))
   
   SSS[J+2, J+2] <- est_var_X + (n * t(beta_XG) %*% EAF)^2
   SSS[J+2, J+3] <- SSS[J+3, J+2] <- est_var_X * beta_YX + SSS[1, J+2] * SSS[J+3, 1]
@@ -108,90 +110,16 @@ gen_data_miv_sem <- function(N, n, p, par, seed = NULL) {
   kappa_X <- par$skappa_X * par$sigma_X
   kappa_Y <- par$skappa_Y * par$sigma_Y
   
-  G <- sapply(p, function(t) rbinom(N, n, t)) # genetic variant
-  U <- rnorm(N) # confounder
-  X <- G %*% gamma + kappa_X * U + rnorm(N, sd = par$sigma_X)
-  Y <- G %*% alpha + kappa_Y * U + beta * X + rnorm(N, sd = par$sigma_Y)
+  G <- sapply(p, function(t) stats::rbinom(N, n, t)) # genetic variant
+  U <- stats::rnorm(N) # confounder
+  X <- G %*% gamma + kappa_X * U + stats::rnorm(N, sd = par$sigma_X)
+  Y <- G %*% alpha + kappa_Y * U + beta * X + stats::rnorm(N, sd = par$sigma_Y)
   Z <- cbind(1, G, X, Y)
   ESS <- t(Z) %*% Z / N # first and second-order moments
   
   list(Z = Z, ESS = ESS, U = U)
 }
 
-
-derive_sufficient_statistics <- function(theta, b21, b31, b32, v1, v2, v3, sc24, sc34, estimate_ss = FALSE, no_samples = NULL, seed = NULL) {
-  
-  source('utils/covariance_decomposition.R')
-  
-  l0 <- - sqrt(v1 * theta / (1 - theta))
-  l1 <- sqrt(v1 * (1 - theta) / theta)
-  
-  sb21 <- b21 * sqrt(v1) / sqrt(v2)
-  sb31 <- b31 * sqrt(v1) / sqrt(v3)
-  sb32 <- b32 * sqrt(v2) / sqrt(v3)
-  
-  # B <- matrix(c(0, b21, b31, 0, 0, b32, 0, 0, 0), 3, 3)
-  # V <- diag(c(v1, v2, v3))
-  C <- getC(sc24, sc34, 1)
-  rC <- C[2:3, 3, drop = FALSE]
-  
-  I <- diag(3)
-  # Sigma <- true_cov <- getSigma(b21, b31, b32, sc24, c34, v1, v2, v3, 1)
-  
-  V_TL <- diag(c(v2, v3))
-  
-  smu_TL <- matrix(c(sb21, sb31 + sb21 * sb32), 2, 1)
-  sSigma_TL <- matrix(c(1 + sc24 * sc24, sc24 * sc34 + sb32 * (1 + sc24 * sc24),
-                        sc24 * sc34 + sb32 * (1 + sc24 * sc24), 1 + sb32 * sb32 + (sc34 + sb32 * sc24)^2),
-                      nrow = 2, ncol = 2)
-  
-  print(smu_TL)
-  print(sSigma_TL)
-  
-  mu_TL <- sqrt(V_TL) %*% smu_TL %*% solve(sqrt(v1))
-  Sigma_TL <- sqrt(V_TL) %*% sSigma_TL %*% sqrt(V_TL)
-  
-  ss <- list()
-  ss$l0 <- l0
-  ss$l1 <- l1
-  
-  
-  # Compare estimands with true parameters ----------------------------------
-  
-  if (estimate_ss) {
-    library(mvtnorm)
-    set.seed(seed)
-    
-    if (is.null(no_samples)) {
-      print("Number of samples not specified. Setting this number to 1000")
-      no_samples <- 1000
-    }
-    
-    
-    L <- sample(c(l0, l1), prob = c(1 - theta, theta), size = no_samples, replace = T)
-    T_l_0 <- rmvnorm(no_samples, l0 * mu_TL, Sigma_TL)
-    T_l_1 <- rmvnorm(no_samples, l1 * mu_TL, Sigma_TL)
-    
-    data <- data.frame(L = L, T_i = ifelse(L == l0, T_l_0[, 1], T_l_1[, 1]), T_j = ifelse(L == l0, T_l_0[, 2], T_l_1[, 2]))
-    data_T <- as.matrix(data[, -1])
-    
-    ss$L <- mean(data$L)
-    ss$LL <- mean(data$L * data$L)
-    ss$LT <- matrix(c(mean(data$L * data$T_i), mean(data$L * data$T_j)), 2, 1)
-    ss$TT <- t(data_T) %*% data_T / no_samples
-    ss$samples <- no_samples
-    
-  } else {
-    
-    ss$L <- theta * (l1 - l0) + l0 # \EV{L}
-    ss$LL <- ss$L^2 + v1 # \EV{L^2}
-    ss$LT <- mu_TL * ss$LL
-    ss$TT <- Sigma_TL + (mu_TL %*% t(mu_TL)) * ss$LL
-    ss$samples <- Inf
-  }
-  
-  ss
-}
 
 
 
@@ -220,15 +148,6 @@ get_ML_solution <- function(SS, skappa_X, skappa_Y, sigma_G) {
 }
 
 
-
-
-quick_approximation <- function(MAP, prior_sd) {
-  
-  MAP_value <- scaled_nl_posterior_MR(J, N, SS, est_sigma_G, MAP, prior_sd) * N
-  log_det <- determinant(scaled_nl_hessian_MR(J, N, SS, est_sigma_G, MAP, prior_sd))$modulus
-  
-  MAP_value - 0.5 * log_det + (2 * J + 5) / 2 * log(2 * pi)
-}
 
 
 
@@ -308,7 +227,7 @@ determine_hyperparameters <- function(J, N, SS, sigma_G, fact = 101) {
   # P <- N * (dnorm(0, mean = min_sgamma, sd = est_sd_slab, log = TRUE) - dnorm(min_sgamma, mean = min_sgamma, sd = est_sd_slab, log = TRUE))
   # G <- dnorm(min_sgamma, sd = est_sd_spike, log = TRUE) - dnorm(min_sgamma, sd = est_sd_slab, log = TRUE)
 
-  c_root <- uniroot(function(C) {
+  c_root <- stats::uniroot(function(C) {
     (N + 1 - C) * (min(ML$sgamma^2) * fact) / est_sd_slab^2 + log(C) # + 5 to avoid numerical issues? probably fine since just an approximation
   }, interval = c(N+1, 1e12))
   
@@ -324,7 +243,7 @@ old_determine_hyperparameters <- function(J, N, SS, sigma_G) {
   
   est_sd_slab <- sqrt(sum(ML$sgamma^2) / J)
 
-  c_root <- uniroot(function(C) {
+  c_root <- stats::uniroot(function(C) {
     (N + 1 - C) * min(ML$sgamma^2) * (1 + est_sd_slab^2) / est_sd_slab^2 + log(C) # + 5 to avoid numerical issues? probably fine since just an approximation
   }, interval = c(N+1, 1e12))
   
@@ -411,4 +330,68 @@ smarting_points <- function(SS, sigma_G = binomial_sigma_G(SS)) {
 }
 
 
+
+
+
+compare_and_select_models <- function(discovered_models, prob_threshold = 1e-4) {
+  
+  log_evidences <- sapply(discovered_models$approximations, '[[', 'evidence')
+  print(paste("Best model found has log evidence:", max(log_evidences)))
+  bayes_factors <- exp(log_evidences - max(log_evidences))
+  probabilities <- sort(bayes_factors / sum(bayes_factors), decreasing = T)
+  
+  # Prune models until the one with the lowest probability makes up for at least 
+  # 3e-3 probability, equivalent to 30 out of 10000 samples
+  index <- length(probabilities)
+  while(probabilities[index] / sum(probabilities[1:(index-1)]) < prob_threshold) {
+    index <- index - 1
+  }
+  
+  final_probabilities <- probabilities[1:index] / sum(probabilities[1:index])
+  
+  promising_models <- discovered_models$approximations[names(final_probabilities)]
+  for (model in names(final_probabilities)) {
+    promising_models[[model]]$posterior_probability <- final_probabilities[[model]]
+  }
+  promising_models
+}
+
+table_view <- function(list_models, J) {
+  
+  par_names <- c(
+    paste0("sgamma[", 1:J, "]"),
+    paste0("salpha[", 1:J, "]"),
+    "sbeta",
+    "skappa_X",
+    "skappa_Y",
+    "sigma_X",
+    "sigma_Y"
+  )
+  
+  model_names <- names(list_models)
+  
+  do.call('rbind.data.frame', lapply(1:length(list_models), function(i) {
+    
+    LA <- list_models[[i]]
+    
+    y <- do.call('rbind.data.frame', lapply(1:length(LA$optima), function(j) {
+      optimum <- LA$optima[[j]]
+      
+      c(list(model_names[i], LA$evidence, LA$num_optima, j, optimum$origin, optimum$LA,
+             optimum$mixture_prob * LA$posterior_probability), as.list(optimum$par))
+    }))
+    
+    names(y) <- c(
+      "model",
+      "log_evidence",
+      "num_optima",
+      "id_optimum",
+      "at_origin",
+      "lev_optimum",
+      "probability",
+      par_names
+    )
+    y
+  }))
+}
 

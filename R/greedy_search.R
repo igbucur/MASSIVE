@@ -1,22 +1,34 @@
 
-#' Routine to perform greedy search at the beginning of MASSIVE algorithm.
-#' Here all the neighbors of a model are evaluated and the best one is selected
-#' for the next step if it improves the log-evidence.
+#' Routine to perform greedy search at the beginning of MASSIVE algorithm
+#' 
+#' @description At each greedy step, we examine all of the IV models in the
+#' neighbor set in parallel. The neighbor with the highest model evidence is
+#' chosen and the algorithm moves to it if the evidence is higher compared to
+#' the current IV model.
 #'
-#' @param J Integer number of candidate instruments
-#' @param N Integer number of observations
-#' @param SS Numeric moments matrix
-#' @param sigma_G Numeric vector of instrument variances
-#' @param sd_slab Numeric scale parameter of slab component
-#' @param sd_spike Numeric scale parameter of spike component
-#' @param init_model Character string describing initial model
-#' @param tol Numeric tolerance stopping value for optimization
-#' @param post_fun Function computing the negative log-posterior
-#' @param get_neighbors Function computing the negative log-posterior gradie
-#' @param LA_function Function computing the approximated model log-evidence
+#' @param J Integer number of genetic instrumental variables.
+#' @param N Integer number of observations.
+#' @param SS Numeric matrix containing first- and second-order statistics.
+#' @param sigma_G Numeric vector of genetic IV standard deviations.
+#' @param sd_slab Numeric value representing slab component standard deviation.
+#' @param sd_spike Numeric value representing spike component standard deviation.
+#' @param init_model Character vector describing starting IV model in search.
+#' @param get_neighbors Function to get neighbor IV models at every step.
+#' @param LA_function Function for computing the IV model Laplace approximation
 #'
-#' @return Character string indicating model found using greedy search
-parallel_greedy_search <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.01, init_model = NULL, get_neighbors = IV_neighbor_models, LA_function = safe_smart_LA_log) {
+#' @return A list containing the optimum found with greedy search, the list of 
+#' IV models visited and their approximations, and the number of visited models.
+#' 
+#' @export
+#'
+#' @examples
+#' J <- 5 # number of instruments
+#' N <- 1000 # number of samples
+#' parameters <- random_Gaussian_parameters(J) 
+#' EAF <- runif(J, 0.1, 0.9) # EAF random values
+#' dat <- gen_data_miv_sem(N, n, EAF, parameters)
+#' parallel_greedy_search(J, N, dat$ESS, binomial_sigma_G(dat$ESS), 1, 0.01)
+parallel_greedy_search <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.01, init_model = NULL, get_neighbors = smart_neighbor_models, LA_function = safe_smart_LA_log) {
   
   approximations <- list()
   scores <- list()
@@ -24,17 +36,19 @@ parallel_greedy_search <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.
   if (is.null(init_model)) {
     
     best_start <- which.max(c(
-      LA_function(J, N, SS, sigma_G, prior_sd = decode_model(get_full_model(J), sd_slab, sd_spike))$evidence, 
-      LA_function(J, N, SS, sigma_G, prior_sd = decode_model(get_ivar_model(J), sd_slab, sd_spike))$evidence
+      LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_full_model(J), sd_slab, sd_spike))$evidence, 
+      # LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_null_model(J), sd_slab, sd_spike))$evidence, 
+      LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_ivar_model(J), sd_slab, sd_spike))$evidence
     ))
     
     if (best_start == 1) init_model <- get_full_model(J)
+    # else if (best_start == 2) init_model <- get_null_model(J)
     else if (best_start == 2) init_model <- get_ivar_model(J)
     
   } 
   
   current_model <- init_model
-  current_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(current_model, sd_slab, sd_spike))
+  current_model_LA <- LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(current_model, sd_slab, sd_spike))
   
   print(paste("Current best model:", current_model))
   print(paste("Evidence of best model:", current_model_LA$evidence))
@@ -57,7 +71,7 @@ parallel_greedy_search <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.
         if (is.null(scores[[new_model]])) {
           #models_visited <- models_visited + 1
           #print(paste("New model found during greedy search:", new_model))
-          new_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(new_model, sd_slab, sd_spike))
+          new_model_LA <- LA_function(J, N, SS, sigma_G, par = current_model_LA$MAP, prior_sd = decode_model(new_model, sd_slab, sd_spike))
           new_score <- new_model_LA$evidence
           
           return (list(name = new_model, LA = new_model_LA))
@@ -92,41 +106,54 @@ parallel_greedy_search <- function(J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.
   list(greedy_model = current_model, approximations = approximations, models_visited = models_visited)
 }
 
-#' Routine to perform greedy search at the beginning of MASSIVE algorithm.
-#' Here neighbors are examined in a random order until the first one that
-#' improves the log-evidence is found and selected.
+#' Greedy search function in the IV model space.
+#' 
+#' @description At each greedy step, we explore the IV models in the neighbor
+#' set one by one. As soon as one has higher evidence than the current IV model,
+#' we greedily move to the better neighbor.
 #'
-#' @param J Integer number of candidate instruments
-#' @param N Integer number of observations
-#' @param SS Numeric moments matrix
-#' @param sigma_G Numeric vector of instrument variances
-#' @param sd_slab Numeric scale parameter of slab component
-#' @param sd_spike Numeric scale parameter of spike component
-#' @param init_model Character string describing initial model
-#' @param tol Numeric tolerance stopping value for optimization
-#' @param post_fun Function computing the negative log-posterior
-#' @param get_neighbors Function computing the negative log-posterior gradie
-#' @param LA_function Function computing the approximated model log-evidence
+#' @param J Integer number of genetic instrumental variables.
+#' @param N Integer number of observations.
+#' @param SS Numeric matrix containing first- and second-order statistics.
+#' @param sigma_G Numeric vector of genetic IV standard deviations.
+#' @param sd_slab Numeric value representing slab component standard deviation.
+#' @param sd_spike Numeric value representing spike component standard deviation.
+#' @param init_model Character vector describing starting IV model in search.
+#' @param get_neighbors Function to get neighbor IV models at every step.
+#' @param LA_function Function for computing the IV model Laplace approximation
 #'
-#' @return Character string indicating model found using greedy search
-stochastic_greedy_search <- function(J, N, SS, sigma_G = NULL, sd_slab = 1, sd_spike = 0.01, init_model = NULL, get_neighbors = IV_neighbor_models, LA_function = safe_smart_LA_log) {
+#' @return A list containing the optimum found with greedy search, the list of 
+#' IV models visited and their approximations, and the number of visited models.
+#' 
+#' @export
+#'
+#' @examples
+#' J <- 5 # number of instruments
+#' N <- 1000 # number of samples
+#' parameters <- random_Gaussian_parameters(J) 
+#' EAF <- runif(J, 0.1, 0.9) # EAF random values
+#' dat <- gen_data_miv_sem(N, n, EAF, parameters)
+#' stochastic_greedy_search(J, N, dat$ESS, binomial_sigma_G(dat$ESS), 1, 0.01)
+stochastic_greedy_search <- function(J, N, SS, sigma_G = NULL, sd_slab = 1, sd_spike = 0.01, init_model = NULL, get_neighbors = smart_neighbor_models, LA_function = safe_smart_LA_log) {
   
   approximations <- list()
   
   if (is.null(init_model)) {
     
     best_start <- which.max(c(
-      LA_function(J, N, SS, sigma_G, prior_sd = decode_model(get_full_model(J), sd_slab, sd_spike))$evidence, 
-      LA_function(J, N, SS, sigma_G, prior_sd = decode_model(get_ivar_model(J), sd_slab, sd_spike))$evidence
+      LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_full_model(J), sd_slab, sd_spike))$evidence, 
+      # LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_null_model(J), sd_slab, sd_spike))$evidence, 
+      LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(get_ivar_model(J), sd_slab, sd_spike))$evidence
     ))
     
     if (best_start == 1) init_model <- get_full_model(J)
+    # else if (best_start == 2) init_model <- get_null_model(J)
     else if (best_start == 2) init_model <- get_ivar_model(J)
     
   } 
   
   current_model <- init_model
-  current_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(current_model, sd_slab, sd_spike))
+  current_model_LA <- LA_function(J, N, SS, sigma_G, par = random_Gaussian_parameters(J), prior_sd = decode_model(current_model, sd_slab, sd_spike))
   
   print(paste("Current best model:", current_model))
   print(paste("Evidence of best model:", current_model_LA$evidence))
@@ -146,7 +173,7 @@ stochastic_greedy_search <- function(J, N, SS, sigma_G = NULL, sd_slab = 1, sd_s
       if (is.null(approximations[[new_model]])) {
         models_visited <- models_visited + 1
         
-        new_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(new_model, sd_slab, sd_spike))
+        new_model_LA <- LA_function(J, N, SS, sigma_G, par = current_model_LA$MAP, prior_sd = decode_model(new_model, sd_slab, sd_spike))
         approximations[[new_model]] <- new_model_LA
         # print(paste("New model found during greedy search:", new_model))
         # print(paste("Evidence of new model:", new_model_LA$evidence))
@@ -167,15 +194,18 @@ stochastic_greedy_search <- function(J, N, SS, sigma_G = NULL, sd_slab = 1, sd_s
   list(greedy_model = current_model, approximations = approximations, models_visited = models_visited)
 }
 
-#' Helper function that returns neighbors of a particular IV model.
-#'
-#' @param model Character string description of model.
-#' @param J Integer number of candidate instruments
-#'
-#' @return List of model neighbors.
-#' 
-#' @keywords internal
-IV_neighbor_models <- function(model, J) {
+
+neighbor_models <- function(model, J) {
+  ids <- c(1:J, (J+2):(2*J+1), 2*J+3, 2*J+5, 2*J+7)
+  
+  lapply(ids, function(idx) {
+    new_model <- model
+    substr(new_model, idx, idx) <- ifelse(substr(new_model, idx, idx) == "1", "0", "1")
+    new_model
+  })
+}
+
+smart_neighbor_models <- function(model, J) {
   # ids <- c(1:J, (J+2):(2*J+1), 2*J+3, 2*J+5)
   
   lapply((J+2):(2*J+1), function(idx) {

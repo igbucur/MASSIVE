@@ -1,19 +1,29 @@
 
 #' Routine for (more robustly) finding a MASSIVE posterior local optimum
 #'
-#' @param J Integer number of candidate instruments
-#' @param N Integer number of observations
-#' @param SS Numeric moments matrix
-#' @param sigma_G Numeric vector of instrument variances
-#' @param prior_sd List containing prior hyperparameters
-#' @param skappa_X Numeric value of confounding coefficient used for initialization
-#' @param skappa_Y Numeric value of confounding coefficient used for initialization
-#' @param tol Numeric tolerance stopping value for optimization
-#' @param post_fun Function computing the negative log-posterior
-#' @param gr_fun Function computing the negative log-posterior gradient
-#' @param hess_fun Function computing the negative log-posterior Hessian
+#' @param J Integer number of genetic instrumental variables.
+#' @param N Integer number of observations.
+#' @param SS Numeric matrix containing first- and second-order statistics.
+#' @param sigma_G Numeric vector of genetic IV standard deviations.
+#' @param prior_sd List of standard deviations for the parameter Gaussian priors.
+#' @param skappa_X Scale-free confounding coefficient from confounder to exposure.
+#' @param skappa_Y Scale-free confounding coefficient from confounder to outcome.
+#' @param tol Numeric tolerance value used to decide if a better optimum was found.
+#' @param post_fun Function for computing the IV model posterior value.
+#' @param gr_fun Function for computing the IV model posterior gradient.
+#' @param hess_fun Function for computing the IV model posterior Hessian.
 #'
-#' @return Local posterior optimum
+#' @return optim object (see \link[stats]{optim} containing optimum parameters, 
+#' the value obtained at the optimum, and the Hessian at the optimum.
+#' @export
+#'
+#' @examples
+#' J <- 5 # number of instruments
+#' N <- 1000 # number of samples
+#' parameters <- random_Gaussian_parameters(J) 
+#' EAF <- runif(J, 0.1, 0.9) # EAF random values
+#' dat <- gen_data_miv_sem(N, n, EAF, parameters)
+#' robust_find_optimum(J, N, dat$ESS, binomial_sigma_G(dat$ESS), decode_model(get_ply_model(J), 1, 0.01), skappa_X = 1, skappa_Y = 1)
 robust_find_optimum <- function(J, N, SS, sigma_G, prior_sd, skappa_X, skappa_Y, tol = 1e-6,
                          post_fun = scaled_nl_posterior_log, gr_fun = scaled_nl_gradient_log, hess_fun = scaled_nl_hessian_log) {
   
@@ -28,7 +38,7 @@ robust_find_optimum <- function(J, N, SS, sigma_G, prior_sd, skappa_X, skappa_Y,
     par$sigma_X <- log(par$sigma_X)
     par$sigma_Y <- log(par$sigma_Y)
     
-    optim_MAP <- optim(parameter_list_to_vector(par), fn = function(x) {
+    optim_MAP <- stats::optim(parameter_list_to_vector(par), fn = function(x) {
       params <- list(
         sgamma = x[1:J],
         salpha = x[(J+1):(2*J)],
@@ -67,25 +77,12 @@ robust_find_optimum <- function(J, N, SS, sigma_G, prior_sd, skappa_X, skappa_Y,
   optim_MAP
 }
 
-#' Routine for finding a MASSIVE posterior local optimum
-#'
-#' @param J Integer number of candidate instruments
-#' @param N Integer number of observations
-#' @param SS Numeric moments matrix
-#' @param sigma_G Numeric vector of instrument variances
-#' @param prior_sd List containing prior hyperparameters
-#' @param skappa_X Numeric value of confounding coefficient used for initialization
-#' @param skappa_Y Numeric value of confounding coefficient used for initialization
-#' @param post_fun Function computing the negative log-posterior
-#' @param gr_fun Function computing the negative log-posterior gradient
-#' @param hess_fun Function computing the negative log-posterior Hessian
-#'
-#' @return Local posterior optimum
+
 find_optimum <- function(J, N, SS, sigma_G, prior_sd, skappa_X, skappa_Y, 
                          post_fun = scaled_nl_posterior_log, gr_fun = scaled_nl_gradient_log, hess_fun = scaled_nl_hessian_log) {
   
   par <- get_ML_solution(SS, skappa_X, skappa_Y, sigma_G)
-  optim_MAP <- optim(c(
+  optim_MAP <- stats::optim(c(
     par$sgamma, par$salpha, par$sbeta, par$skappa_X, par$skappa_Y, log(par$sigma_X), log(par$sigma_Y)
   ), fn = function(x) {
     params <- list(
