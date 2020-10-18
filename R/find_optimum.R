@@ -30,7 +30,7 @@
 #'   skappa_X = 1, skappa_Y = 1
 #' )
 robust_find_optimum <- function(J, N, SS, sigma_G, prior_sd, skappa_X, skappa_Y, tol = 1e-6,
-                         post_fun = scaled_nl_posterior_log, gr_fun = scaled_nl_gradient_log, hess_fun = scaled_nl_hessian_log) {
+                         post_fun = scaled_neg_log_posterior, gr_fun = scaled_neg_log_gradient, hess_fun = scaled_neg_log_hessian) {
   
 
   
@@ -112,7 +112,7 @@ robust_find_optimum <- function(J, N, SS, sigma_G, prior_sd, skappa_X, skappa_Y,
 #'   skappa_X = 1, skappa_Y = 1
 #' )
 find_optimum <- function(J, N, SS, sigma_G, prior_sd, skappa_X, skappa_Y, 
-                         post_fun = scaled_nl_posterior_log, gr_fun = scaled_nl_gradient_log, hess_fun = scaled_nl_hessian_log) {
+                         post_fun = scaled_neg_log_posterior, gr_fun = scaled_neg_log_gradient, hess_fun = scaled_neg_log_hessian) {
   
   par <- get_ML_solution(SS, skappa_X, skappa_Y, sigma_G)
   optim_MAP <- stats::optim(c(

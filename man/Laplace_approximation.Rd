@@ -11,9 +11,9 @@ Laplace_approximation(
   SS,
   sigma_G,
   prior_sd,
-  post_fun = scaled_nl_posterior_log,
-  gr_fun = scaled_nl_gradient_log,
-  hess_fun = scaled_nl_hessian_log,
+  post_fun = scaled_neg_log_posterior,
+  gr_fun = scaled_neg_log_gradient,
+  hess_fun = scaled_neg_log_hessian,
   opt_fun = robust_find_optimum,
   starting_points = "smart"
 )

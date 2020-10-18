@@ -14,9 +14,9 @@ robust_find_optimum(
   skappa_X,
   skappa_Y,
   tol = 1e-06,
-  post_fun = scaled_nl_posterior_log,
-  gr_fun = scaled_nl_gradient_log,
-  hess_fun = scaled_nl_hessian_log
+  post_fun = scaled_neg_log_posterior,
+  gr_fun = scaled_neg_log_gradient,
+  hess_fun = scaled_neg_log_hessian
 )
 }
 \arguments{

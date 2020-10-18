@@ -37,9 +37,9 @@
 #'   decode_IV_model(get_random_IV_model(J), 1, 0.01)
 #' )
 safe_Laplace_approximation <- function(J, N, SS, sigma_G, prior_sd, 
-                              post_fun = scaled_nl_posterior_log, 
-                              gr_fun = scaled_nl_gradient_log, 
-                              hess_fun = scaled_nl_hessian_log, 
+                              post_fun = scaled_neg_log_posterior, 
+                              gr_fun = scaled_neg_log_gradient, 
+                              hess_fun = scaled_neg_log_hessian, 
                               opt_fun = robust_find_optimum, starting_points = "smart") {
   
   tryCatch(
@@ -87,9 +87,9 @@ safe_Laplace_approximation <- function(J, N, SS, sigma_G, prior_sd,
 #'   decode_IV_model(get_random_IV_model(J), 1, 0.01)
 #' )
 Laplace_approximation <- function(J, N, SS, sigma_G, prior_sd, 
-                         post_fun = scaled_nl_posterior_log, 
-                         gr_fun = scaled_nl_gradient_log, 
-                         hess_fun = scaled_nl_hessian_log, 
+                         post_fun = scaled_neg_log_posterior, 
+                         gr_fun = scaled_neg_log_gradient, 
+                         hess_fun = scaled_neg_log_hessian, 
                          opt_fun = robust_find_optimum, starting_points = "smart") {
 
   if (starting_points == "guess") {
