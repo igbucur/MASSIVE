@@ -31,4 +31,5 @@ Imports:
     matrixStats
 Suggests: 
     testthat,
-    bayesplot
+    bayesplot,
+    rstan
