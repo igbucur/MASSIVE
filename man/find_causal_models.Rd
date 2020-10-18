@@ -13,10 +13,11 @@ find_causal_models(
   sd_slab = 1,
   sd_spike = 0.01,
   max_iter = 1000,
-  propose_model = smart_proposal,
+  propose_model = propose_neighbor_IV_model,
   LA_function = safe_smart_LA_log,
   greedy_start = NULL,
-  keep_greedy_approximations = FALSE
+  keep_greedy_approximations = FALSE,
+  ...
 )
 }
 \arguments{
@@ -42,6 +43,8 @@ find_causal_models(
 
 \item{keep_greedy_approximations}{Logical flag asking if greedy search history
 should be stored and used in the new MCMC search.}
+
+\item{...}{Extra arguments to pass to Laplace_approximation function.}
 }
 \value{
 A list containing the list of models explored and their approximations,
@@ -57,6 +60,6 @@ J <- 5 # number of instruments
 N <- 1000 # number of samples
 parameters <- random_Gaussian_parameters(J) 
 EAF <- runif(J, 0.1, 0.9) # EAF random values
-dat <- gen_data_miv_sem(N, n, EAF, parameters)
-find_causal_models(J, N, dat$ESS, binomial_sigma_G(dat$ESS), 1, 0.01)
+dat <- generate_data_MASSIVE_model(N, 2, EAF, parameters)
+find_causal_models(J, N, dat$SS, binomial_sigma_G(dat$SS), 1, 0.01)
 }

@@ -37,8 +37,6 @@ find_optimum(
 \item{gr_fun}{Function for computing the IV model posterior gradient.}
 
 \item{hess_fun}{Function for computing the IV model posterior Hessian.}
-
-\item{tol}{Numeric tolerance value used to decide if a better optimum was found.}
 }
 \value{
 optim object (see \link[stats]{optim} containing optimum parameters,
@@ -52,6 +50,10 @@ J <- 5 # number of instruments
 N <- 1000 # number of samples
 parameters <- random_Gaussian_parameters(J) 
 EAF <- runif(J, 0.1, 0.9) # EAF random values
-dat <- gen_data_miv_sem(N, 2, EAF, parameters)
-find_optimum(J, N, dat$ESS, binomial_sigma_G(dat$ESS), decode_model(get_ply_model(J), 1, 0.01), skappa_X = 1, skappa_Y = 1)
+dat <- generate_data_MASSIVE_model(N, 2, EAF, parameters)
+find_optimum(
+  J, N, dat$SS, binomial_sigma_G(dat$SS), 
+  prior_sd = decode_model(get_random_IV_model(J), 1, 0.01), 
+  skappa_X = 1, skappa_Y = 1
+)
 }

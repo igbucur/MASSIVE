@@ -57,6 +57,9 @@ J <- 5 # number of instruments
 N <- 1000 # number of samples
 parameters <- random_Gaussian_parameters(J) 
 EAF <- runif(J, 0.1, 0.9) # EAF random values
-dat <- gen_data_miv_sem(N, n, EAF, parameters)
-safe_smart_LA_log(J, N, dat$ESS, binomial_sigma_G(dat$ESS), decode_model(get_ply_model(J), 1, 0.01))
+dat <- generate_data_MASSIVE_model(N, 2, EAF, parameters)
+smart_LA_log(
+  J, N, dat$SS, binomial_sigma_G(dat$SS), 
+  decode_model(get_random_IV_model(J), 1, 0.01)
+)
 }

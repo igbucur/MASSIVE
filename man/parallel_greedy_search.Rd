@@ -12,8 +12,9 @@ parallel_greedy_search(
   sd_slab = 1,
   sd_spike = 0.01,
   init_model = NULL,
-  get_neighbors = smart_neighbor_models,
-  LA_function = safe_smart_LA_log
+  get_neighbors = neighbor_IV_models,
+  LA_function = safe_smart_LA_log,
+  ...
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ parallel_greedy_search(
 \item{get_neighbors}{Function to get neighbor IV models at every step.}
 
 \item{LA_function}{Function for computing the IV model Laplace approximation}
+
+\item{...}{Extra arguments to pass to Laplace approximation function.}
 }
 \value{
 A list containing the optimum found with greedy search, the list of
@@ -50,6 +53,6 @@ J <- 5 # number of instruments
 N <- 1000 # number of samples
 parameters <- random_Gaussian_parameters(J) 
 EAF <- runif(J, 0.1, 0.9) # EAF random values
-dat <- gen_data_miv_sem(N, 2, EAF, parameters)
-parallel_greedy_search(J, N, dat$ESS, binomial_sigma_G(dat$ESS), 1, 0.01)
+dat <- generate_data_MASSIVE_model(N, 2, EAF, parameters)
+parallel_greedy_search(J, N, dat$SS, binomial_sigma_G(dat$SS), 1, 0.01)
 }

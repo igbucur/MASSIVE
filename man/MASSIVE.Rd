@@ -13,7 +13,10 @@ MASSIVE(
   sd_spike,
   max_iter = 1000,
   greedy_search = parallel_greedy_search,
-  Laplace_approximation = safe_smart_LA_log
+  Laplace_approximation = safe_smart_LA_log,
+  pruning_threshold = 0.003,
+  posterior_samples = 10000,
+  ...
 )
 }
 \arguments{
@@ -34,6 +37,13 @@ MASSIVE(
 \item{greedy_search}{Function for initial greedy search.}
 
 \item{Laplace_approximation}{Function used to compute Laplace approximation of IV model.}
+
+\item{pruning_threshold}{Numeric threshold for pruning approximated IV models.
+Models with probability less that threshold are pruned out.}
+
+\item{posterior_samples}{Integer number of posterior samples to generate.}
+
+\item{...}{Extra arguments for greedy_search, Laplace_approximations and find_causal_models.}
 }
 \value{
 List of explored IV model approximations and their evidences
