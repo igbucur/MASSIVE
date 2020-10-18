@@ -35,7 +35,7 @@ use to recreate the figures from the article. The simulated data can also be
 reproduced using the `reproduce-data.R` file from the `scripts` folder. 
 The simulated data sets are described in `R/data.R`.
 
-- The folder `R` contains the R files that implement the BFCS algorithm and the 
+- The folder `R` contains the R files that implement the MASSIVE algorithm and the 
 routines necessary for reproducing the figures from the article. The main method
 is implemented in `R/MASSIVE.R`.
 
@@ -73,7 +73,7 @@ downloaded and installed.
 
 Download the software from GitHub with the following command:
 `git clone https://github.com/igbucur/MASSIVE.git`. For installing and running the 
-BFCS R package, several R package are required. These are specified in the 
+MASSIVE R package, several R package are required. These are specified in the 
 package `DESCRIPTION` file.
 
 To install the package, open an R instance and run (from the MASSIVE folder):
