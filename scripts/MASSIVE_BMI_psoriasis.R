@@ -87,7 +87,7 @@ saveRDS(MASSIVE_BMI_psoriasis, file = "results/final_robust_MASSIVE_BMI_psoriasi
 #c(result$MAP$sbeta + qnorm(0.025) * sqrt(sbeta_var), result$MAP$sbeta, result$MAP$sbeta + qnorm(0.975) * sqrt(sbeta_var))
 
 ## Generate data with the same statistics?
-# data <- gen_data_miv_sem(N, n, p, par, 1130)
+# data <- generate_data_MASSIVE_model(N, n, p, par, 1130)
 # est_sigma_G <- sqrt(SS[1, 2:(J+1)] * (1 - SS[1, 2:(J+1)] / 2))
 
 # saveRDS(data, file = paste0('results/MR_Laplace_data', suffix, '.rds'))

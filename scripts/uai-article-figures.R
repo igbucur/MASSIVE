@@ -17,7 +17,7 @@ color_blind_palette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", 
 load('data/five_optima_posterior_surface.RData')
 
 five_optima_posterior_surface_plot <- ggplot(five_optima_posterior_surface$grid_values) +
-  aes(x = x, y = y, z = -z, fill = - five_optima_posterior_surface$num_samples * z) +
+  aes(x = x, y = y, z = -z, fill = - five_optima_posterior_surface$simulation_details$num_samples * z) +
   geom_raster(interpolate = TRUE) +
   coord_equal() +
   geom_contour(color = "white", alpha = 0.5, binwidth = 0.005) +
