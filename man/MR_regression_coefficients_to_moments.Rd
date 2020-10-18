@@ -25,21 +25,19 @@ MR_regression_coefficients_to_moments(
 
 \item{sigma_XG}{Numeric vector of estimated G -> X standard errors.}
 
+\item{nobs_XG}{Integer sample size in G -> X regression (GWA) study.}
+
 \item{beta_YG}{Numeric vector of estimated G -> Y regression terms.}
 
 \item{sigma_YG}{Numeric vector of estimated G -> Y standard errors.}
+
+\item{nobs_YG}{Integer sample size in G -> Y regression (GWA) study.}
 
 \item{beta_YX}{Numeric vector of estimated X -> Y regression value.}
 
 \item{EAF}{Numeric vector of effect allele frequencies}
 
 \item{n}{Integer number of alleles (trials) for binomial genetic variant.}
-
-\item{obs_XG}{Integer sample size in G -> X regression (GWA) study.}
-
-\item{obs_YG}{Integer sample size in G -> Y regression (GWA) study.}
-
-\item{obs_YX}{Integer sample size in X -> Y regression (observational) study.}
 }
 \value{
 Numeric matrix of size (J+3)x(J+3) containing the first-order and

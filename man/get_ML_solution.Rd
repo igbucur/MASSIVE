@@ -17,7 +17,8 @@ get_ML_solution(SS, skappa_X, skappa_Y, sigma_G)
 \item{sigma_G}{Numeric vector of instrument standard deviations.}
 }
 \value{
-
+List of parameters on the ML manifold with the same values for
+the scaled confounding coefficients (skappa_X, skappa_Y).
 }
 \description{
 Function for deriving maximum likelihood solution given values for scale-free

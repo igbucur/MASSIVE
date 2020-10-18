@@ -88,7 +88,8 @@ random_Gaussian_parameters <- function(J, log_scale = FALSE) {
 #' @param skappa_Y Numeric scale-free confounding coefficient on outcome.
 #' @param sigma_G Numeric vector of instrument standard deviations.
 #'
-#' @return
+#' @return List of parameters on the ML manifold with the same values for
+#' the scaled confounding coefficients (skappa_X, skappa_Y).
 #' @export
 #'
 #' @examples

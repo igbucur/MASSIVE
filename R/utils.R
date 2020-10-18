@@ -4,12 +4,11 @@
 #' @param J Integer number of instrumental variables.
 #' @param beta_XG Numeric vector of estimated G -> X regression terms.
 #' @param sigma_XG Numeric vector of estimated G -> X standard errors.
-#' @param obs_XG Integer sample size in G -> X regression (GWA) study.
+#' @param nobs_XG Integer sample size in G -> X regression (GWA) study.
 #' @param beta_YG Numeric vector of estimated G -> Y regression terms.
 #' @param sigma_YG Numeric vector of estimated G -> Y standard errors.
-#' @param obs_YG Integer sample size in G -> Y regression (GWA) study.
+#' @param nobs_YG Integer sample size in G -> Y regression (GWA) study.
 #' @param beta_YX Numeric vector of estimated X -> Y regression value.
-#' @param obs_YX Integer sample size in X -> Y regression (observational) study.
 #' @param EAF Numeric vector of effect allele frequencies
 #' @param n Integer number of alleles (trials) for binomial genetic variant.
 #'
@@ -98,7 +97,8 @@ generate_data_MASSIVE_model <- function(N, n, p, par, seed = NULL, log_scale = F
 #' @param SS Numeric matrix containing first- and second-order statistics.
 #' @param sigma_G Numeric vector of instrument standard deviations.
 #'
-#' @return
+#' @return List containing sd_slab and sd_spike hyperparameters, indicating
+#' the standard deviation of the slab and spike component, respectively.
 #' @export
 #'
 #' @examples
@@ -133,7 +133,8 @@ determine_hyperparameters <- function(J, N, SS, sigma_G) {
 #' @param SS Numeric matrix containing first- and second-order statistics.
 #' @param sigma_G Numeric vector of instrument standard deviations.
 #'
-#' @return
+#' @return List containing sd_slab and sd_spike hyperparameters, indicating
+#' the standard deviation of the slab and spike component, respectively.
 #' @export
 #'
 #' @examples

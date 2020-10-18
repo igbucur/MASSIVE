@@ -17,7 +17,8 @@ determine_hyperparameters(J, N, SS, sigma_G)
 \item{sigma_G}{Numeric vector of instrument standard deviations.}
 }
 \value{
-
+List containing sd_slab and sd_spike hyperparameters, indicating
+the standard deviation of the slab and spike component, respectively.
 }
 \description{
 Functioning for automatically determining MASSIVE hyperparameters from data,
