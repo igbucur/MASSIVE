@@ -1,4 +1,5 @@
 #include "MASSIVE_model.h"
+#include <assert.h>
 
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::depends(BH)]]
@@ -43,9 +44,6 @@ double neg_log_prior_MR(List param_list, List prior_sd) {
   
   return - (sum(LOG_PDF_NORM_VEC(par.sgamma, sd.sgamma) + LOG_PDF_NORM_VEC(par.salpha, sd.salpha)) +
     LOG_PDF_NORM(par.sbeta, 10) + LOG_PDF_NORM(par.skappa_X, 10) + LOG_PDF_NORM(par.skappa_Y, 10) - log(par.sigma_X) - log(par.sigma_Y));
-    //LOG_PDF_NORM(log(par.sigma_X), 10) + LOG_PDF_NORM(log(par.sigma_Y), 10) 
-              
-              // LOG_PDF_NORM(par.sigma_X, 10) + LOG_PDF_NORM(par.sigma_Y, 10) + log(4.0));
 }
 
 // [[Rcpp::export]]
@@ -53,13 +51,11 @@ double scaled_nl_posterior_MR(unsigned J, unsigned N, arma::mat SS, arma::vec si
   
   arma::mat f(J + 3, 2, arma::fill::zeros);
   arma::mat sigma(2, 2, arma::fill::zeros);
-  // arma::vec sigma_G(J, arma::fill::zeros);
   
   struct Parameters par = read_parameter_list(param_list);
   struct Parameters sd = read_prior_list(prior_sd);
   
   for (unsigned j = 0; j < J; ++j) {
-    // sigma_G(j) = sqrt((1 - SS(0, j+1) / n) * SS(0, j+1)); 
     f(j+1, 0) = - par.sigma_X * par.sgamma(j) / sigma_G(j);
     f(j+1, 1) = - par.sigma_Y * (par.salpha(j) + par.sbeta * par.sgamma(j)) / sigma_G(j);
   }
@@ -76,8 +72,9 @@ double scaled_nl_posterior_MR(unsigned J, unsigned N, arma::mat SS, arma::vec si
   
   log_det(val, sign, sigma);
   
-  if (sign < 0) std::cerr << "WARNING: negative determinant of sigma in scaled_nl_posterior_MR." << std::endl;
-  
+  // Positive determinant of sigma in scaled_nl_posterior_MR.
+  assert(sign > 0);
+
   double neg_log_prior = neg_log_prior_MR(param_list, prior_sd);
   
   return 0.5 * (log(4 * M_PI * M_PI) + val + trace(inv(sigma) * S)) + neg_log_prior / N;
@@ -90,14 +87,12 @@ arma::vec scaled_nl_gradient_MR(unsigned J, unsigned N, arma::mat SS, arma::vec 
   arma::vec gradient(2 * J + 5, arma::fill::zeros);
   arma::mat sf(J + 3, 2, arma::fill::zeros);
   arma::mat iscov(2, 2, arma::fill::zeros);
-  // arma::vec sigma_G(J, arma::fill::zeros);
   
   struct Parameters par = read_parameter_list(param_list);
   struct Parameters sd = read_prior_list(prior_sd);
   
   
   for (unsigned j = 0; j < J; ++j) {
-    // sigma_G(j) = sqrt((1 - SS(0, j+1) / n) * SS(0, j+1)); 
     sf(j+1, 0) = - par.sgamma(j);
     sf(j+1, 1) = - (par.salpha(j) + par.sbeta * par.sgamma(j));
   }
@@ -118,14 +113,6 @@ arma::vec scaled_nl_gradient_MR(unsigned J, unsigned N, arma::mat SS, arma::vec 
   
   arma::mat common_term = ihalf_Sigma_Z * SS * ihalf_Sigma_Z * sf * iscov;
   arma::mat I_2(2, 2, arma::fill::eye);
-  
-  // std::cout << "ihalf_Sigma_Z: " << std::endl;
-  // std::cout << ihalf_Sigma_Z << std::endl << std::endl;
-  // std::cout << "sf: " << std::endl;
-  // std::cout << sf << std::endl << std::endl;
-  // std::cout << "iscov: " << std::endl;
-  // std::cout << iscov << std::endl << std::endl;
-  // std::cout << common_term << std::endl;
   
   // derivatives w.r.t sgamma and salpha
   for (unsigned j = 0; j < J; ++j) {
@@ -170,10 +157,8 @@ arma::mat scaled_nl_hessian_MR(unsigned J, unsigned N, arma::mat SS, arma::vec s
   
   arma::mat sf(J + 3, 2, arma::fill::zeros);
   arma::mat iscov(2, 2, arma::fill::zeros);
-  // arma::vec sigma_G(J, arma::fill::zeros);
 
   for (unsigned j = 0; j < J; ++j) {
-    // sigma_G(j) = sqrt((1 - SS(0, j+1) / n) * SS(0, j+1)); 
     sf(j+1, 0) = - par.sgamma(j);
     sf(j+1, 1) = - (par.salpha(j) + par.sbeta * par.sgamma(j));
   }
@@ -251,17 +236,12 @@ arma::mat scaled_nl_hessian_MR(unsigned J, unsigned N, arma::mat SS, arma::vec s
   /*
    * Derivatives of Sigma_Z
    */
-
   arma::mat d_sigma_X_Sigma_Z(J + 3, J + 3, arma::fill::zeros); d_sigma_X_Sigma_Z(J + 1, J + 1) = 1;
   arma::mat d_sigma_Y_Sigma_Z(J + 3, J + 3, arma::fill::zeros); d_sigma_Y_Sigma_Z(J + 2, J + 2) = 1;
 
   
   for (unsigned j = 0; j < J; ++j) {
     for (unsigned k = 0; k < J; ++k) {
-      // if (j == 0 && k == 0) {
-      //   std::cout << trace(iscov * d_sgamma_sf.slice(j).t() * sSS * d_sgamma_sf.slice(k)) << std::endl;
-      //   std::cout << (j == k) / (sd.sgamma(j) * sd.sgamma(j)) << std::endl;
-      // }
       hessian(j, k) = trace(iscov * d_sgamma_sf.slice(j).t() * sSS * d_sgamma_sf.slice(k)) + double(j == k) / (sd.sgamma(j) * sd.sgamma(j) * N);
       hessian(j, J + k) = hessian(J + k, j) = trace(iscov * d_sgamma_sf.slice(j).t() * sSS * d_salpha_sf.slice(k));
       hessian(J + j, J + k) = trace(iscov * d_salpha_sf.slice(j).t() * sSS * d_salpha_sf.slice(k)) + double(j == k) / (sd.salpha(j) * sd.salpha(j) * N);
@@ -310,79 +290,43 @@ arma::mat scaled_nl_hessian_MR(unsigned J, unsigned N, arma::mat SS, arma::vec s
     trace(iscov * d_skappa_X_scov * iscov * d_sbeta_scov) / 2.0 +
     trace(iscov * d2_sbeta_skappa_X_scov) / 2.0;
   
-    hessian(2 * J , 2 * J + 2) = hessian(2 * J + 2, 2 * J) = 
-      - trace(d2_sbeta_skappa_Y_scov * iscov * sf.t() * common_term) / 2.0 +
-      trace(d_sbeta_scov * iscov * d_skappa_Y_scov * iscov * sf.t() * common_term) -
-      trace(iscov * d_skappa_Y_scov * iscov * d_sbeta_sf.t() * sSS * sf) -
-      trace(iscov * d_skappa_Y_scov * iscov * d_sbeta_scov) / 2.0 +
-      trace(iscov * d2_sbeta_skappa_Y_scov) / 2.0;
+  hessian(2 * J , 2 * J + 2) = hessian(2 * J + 2, 2 * J) = 
+    - trace(d2_sbeta_skappa_Y_scov * iscov * sf.t() * common_term) / 2.0 +
+    trace(d_sbeta_scov * iscov * d_skappa_Y_scov * iscov * sf.t() * common_term) -
+    trace(iscov * d_skappa_Y_scov * iscov * d_sbeta_sf.t() * sSS * sf) -
+    trace(iscov * d_skappa_Y_scov * iscov * d_sbeta_scov) / 2.0 +
+    trace(iscov * d2_sbeta_skappa_Y_scov) / 2.0;
+  
+  hessian(2 * J, 2 * J + 3) = hessian(2 * J + 3, 2 * J) =
+    trace(d_sbeta_scov * iscov * sf.t() * ihalf_Sigma_Z * d_sigma_X_Sigma_Z * common_term) +
+    trace(d_sbeta_sf.t() * ihalf_Sigma_Z * d_sigma_X_Sigma_Z * common_term) -
+    trace(iscov * d_sbeta_sf.t() * sSS * d_sigma_X_Sigma_Z * ihalf_Sigma_Z * sf);
     
-    hessian(2 * J, 2 * J + 3) = hessian(2 * J + 3, 2 * J) =
-      trace(d_sbeta_scov * iscov * sf.t() * ihalf_Sigma_Z * d_sigma_X_Sigma_Z * common_term) +
-      trace(d_sbeta_sf.t() * ihalf_Sigma_Z * d_sigma_X_Sigma_Z * common_term) -
-      trace(iscov * d_sbeta_sf.t() * sSS * d_sigma_X_Sigma_Z * ihalf_Sigma_Z * sf);
-      
-    hessian(2 * J, 2 * J + 4) = hessian(2 * J + 4, 2 * J) = 
-      trace(d_sbeta_scov * iscov * sf.t() * ihalf_Sigma_Z * d_sigma_Y_Sigma_Z * common_term) +
-      trace(d_sbeta_sf.t() * ihalf_Sigma_Z * d_sigma_Y_Sigma_Z * common_term) -
-      trace(iscov * d_sbeta_sf.t() * sSS * d_sigma_Y_Sigma_Z * ihalf_Sigma_Z * sf);
-      
-    hessian(2 * J + 1, 2 * J + 2) = hessian(2 * J + 2, 2 * J + 1) = 
-      - trace(d2_skappa_X_skappa_Y_scov * iscov * sf.t() * common_term) / 2.0 +
-        trace(d_skappa_X_scov * iscov * d_skappa_Y_scov * iscov * sf.t() * common_term) +
-        trace(d2_skappa_X_skappa_Y_scov * iscov) / 2.0 -
-        trace(d_skappa_X_scov * iscov * d_skappa_Y_scov * iscov) / 2.0;
+  hessian(2 * J, 2 * J + 4) = hessian(2 * J + 4, 2 * J) = 
+    trace(d_sbeta_scov * iscov * sf.t() * ihalf_Sigma_Z * d_sigma_Y_Sigma_Z * common_term) +
+    trace(d_sbeta_sf.t() * ihalf_Sigma_Z * d_sigma_Y_Sigma_Z * common_term) -
+    trace(iscov * d_sbeta_sf.t() * sSS * d_sigma_Y_Sigma_Z * ihalf_Sigma_Z * sf);
     
-    hessian(2 * J + 1, 2 * J + 3) = hessian(2 * J + 3, 2 * J + 1) =
-      trace(d_skappa_X_scov * iscov * sf.t() * ihalf_Sigma_Z * d_sigma_X_Sigma_Z * common_term);
-    
-    hessian(2 * J + 1, 2 * J + 4) = hessian(2 * J + 4, 2 * J + 1) = 
-      trace(d_skappa_X_scov * iscov * sf.t() * ihalf_Sigma_Z * d_sigma_Y_Sigma_Z * common_term);
-            
-    hessian(2 * J + 2, 2 * J + 3) = hessian(2 * J + 3, 2 * J + 2) =
-      trace(d_skappa_Y_scov * iscov * sf.t() * ihalf_Sigma_Z * d_sigma_X_Sigma_Z * common_term);
+  hessian(2 * J + 1, 2 * J + 2) = hessian(2 * J + 2, 2 * J + 1) = 
+    - trace(d2_skappa_X_skappa_Y_scov * iscov * sf.t() * common_term) / 2.0 +
+      trace(d_skappa_X_scov * iscov * d_skappa_Y_scov * iscov * sf.t() * common_term) +
+      trace(d2_skappa_X_skappa_Y_scov * iscov) / 2.0 -
+      trace(d_skappa_X_scov * iscov * d_skappa_Y_scov * iscov) / 2.0;
+  
+  hessian(2 * J + 1, 2 * J + 3) = hessian(2 * J + 3, 2 * J + 1) =
+    trace(d_skappa_X_scov * iscov * sf.t() * ihalf_Sigma_Z * d_sigma_X_Sigma_Z * common_term);
+  
+  hessian(2 * J + 1, 2 * J + 4) = hessian(2 * J + 4, 2 * J + 1) = 
+    trace(d_skappa_X_scov * iscov * sf.t() * ihalf_Sigma_Z * d_sigma_Y_Sigma_Z * common_term);
+          
+  hessian(2 * J + 2, 2 * J + 3) = hessian(2 * J + 3, 2 * J + 2) =
+    trace(d_skappa_Y_scov * iscov * sf.t() * ihalf_Sigma_Z * d_sigma_X_Sigma_Z * common_term);
 
-    hessian(2 * J + 2, 2 * J + 4) = hessian(2 * J + 4, 2 * J + 2) =
-      trace(d_skappa_Y_scov * iscov * sf.t() * ihalf_Sigma_Z * d_sigma_Y_Sigma_Z * common_term);
+  hessian(2 * J + 2, 2 * J + 4) = hessian(2 * J + 4, 2 * J + 2) =
+    trace(d_skappa_Y_scov * iscov * sf.t() * ihalf_Sigma_Z * d_sigma_Y_Sigma_Z * common_term);
 
-    hessian(2 * J + 3, 2 * J + 4) = hessian(2 * J + 4, 2 * J + 3) =
-      trace(iscov * sf.t() * ihalf_Sigma_Z * d_sigma_X_Sigma_Z * sSS * d_sigma_Y_Sigma_Z * ihalf_Sigma_Z * sf);
+  hessian(2 * J + 3, 2 * J + 4) = hessian(2 * J + 4, 2 * J + 3) =
+    trace(iscov * sf.t() * ihalf_Sigma_Z * d_sigma_X_Sigma_Z * sSS * d_sigma_Y_Sigma_Z * ihalf_Sigma_Z * sf);
                   
-  // std::cout << "ihalf_Sigma_Z: " << std::endl;
-  // std::cout << ihalf_Sigma_Z << std::endl << std::endl;
-  // std::cout << "sf: " << std::endl;
-  // std::cout << sf << std::endl << std::endl;
-  // std::cout << "iscov: " << std::endl;
-  // std::cout << iscov << std::endl << std::endl;
-  // std::cout << common_term << std::endl;
-  
-  // // derivatives w.r.t sgamma and salpha
-  // for (unsigned j = 0; j < J; ++j) {
-  //   gradient(j) = - (common_term(j+1, 0) + par.sbeta * common_term(j+1, 1)) + par.sgamma(j) / (sd.sgamma(j) * sd.sgamma(j) * N);
-  //   gradient(j+J) = - common_term(j+1, 1) + par.salpha(j) / (sd.salpha(j) * sd.salpha(j) * N);
-  // }
-  // 
-  // // derivative w.r.t sbeta
-  // arma::mat d_sbeta_scov(2, 2, arma::fill::zeros);
-  // d_sbeta_scov(0, 1) = d_sbeta_scov(1, 0) = 1 + par.skappa_X * par.skappa_X;
-  // d_sbeta_scov(1, 1) = 2 * par.sbeta * (1 + par.skappa_X * par.skappa_X) + 2 * par.skappa_X * par.skappa_Y;
-  // gradient(2*J) = - 0.5 * trace(d_sbeta_scov * iscov * (sf.t() * common_term - I_2)) + par.sbeta / (sd.sbeta * sd.sbeta * N);
-  // for (unsigned j = 0; j < J; ++j) gradient(2*J) -= common_term(j+1, 1) * par.sgamma(j);
-  // 
-  // arma::mat d_skappa_X_scov(2, 2, arma::fill::zeros);
-  // d_skappa_X_scov(0, 0) = 2 * par.skappa_X;
-  // d_skappa_X_scov(0, 1) = d_skappa_X_scov(1, 0) = 2 * par.sbeta * par.skappa_X + par.skappa_Y;
-  // d_skappa_X_scov(1, 1) = 2 * par.sbeta * (par.skappa_Y + par.sbeta * par.skappa_X);
-  // gradient(2*J+1) = - 0.5 * trace(d_skappa_X_scov * iscov * (sf.t() * common_term - I_2)) + par.skappa_X / (sd.skappa_X * sd.skappa_X * N);
-  // 
-  // arma::mat d_skappa_Y_scov(2, 2, arma::fill::zeros);
-  // d_skappa_Y_scov(0, 1) = d_skappa_Y_scov(1, 0) = par.skappa_X;
-  // d_skappa_Y_scov(1, 1) = 2 * (par.skappa_Y + par.sbeta * par.skappa_X);
-  // gradient(2*J+2) = - 0.5 * trace(d_skappa_Y_scov * iscov * (sf.t() * common_term - I_2)) + par.skappa_Y / (sd.skappa_Y * sd.skappa_Y * N);
-  // 
-  // // Huge simplification can be obtained here
-  // gradient(2*J+3) = - (common_term(J+1, 0) - 1) / par.sigma_X; // + par.sigma_X / (100 * N);
-  // gradient(2*J+4) = - (common_term(J+2, 1) - 1) / par.sigma_Y; // + par.sigma_Y / (100 * N);
-  
   return hessian;
 }
