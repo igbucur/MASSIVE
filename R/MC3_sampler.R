@@ -30,7 +30,7 @@
 find_causal_models <- function(
   J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.01, 
   max_iter = 1000, propose_model = propose_neighbor_IV_model,
-  LA_function = safe_smart_LA_log, 
+  LA_function = safe_Laplace_approximation, 
   greedy_start = NULL, keep_greedy_approximations = FALSE, ...
 ) {
   
@@ -43,7 +43,7 @@ find_causal_models <- function(
       approximations <- greedy_start$approximations
       models_visited <- greedy_start$models_visited
     } else {
-      current_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(current_model, sd_slab, sd_spike), ...)
+      current_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_IV_model(current_model, sd_slab, sd_spike), ...)
       approximations <- list()
       approximations[[current_model]] <- current_model_LA
       models_visited <- 1
@@ -51,7 +51,7 @@ find_causal_models <- function(
   } else {
     warning("Initial model not specified. Starting from random model.")
     current_model <- get_random_IV_model(J)
-    current_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(current_model, sd_slab, sd_spike), ...)
+    current_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_IV_model(current_model, sd_slab, sd_spike), ...)
     approximations <- list()
     approximations[[current_model]] <- current_model_LA
     models_visited <- 1
@@ -74,7 +74,7 @@ find_causal_models <- function(
       iter_since_last_new_model <- 0
       models_visited <- models_visited + 1
       print(paste("New model found at iteration", iter, ":", new_model))
-      new_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(new_model, sd_slab, sd_spike), ...)
+      new_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_IV_model(new_model, sd_slab, sd_spike), ...)
       approximations[[new_model]] <- new_model_LA
     }
     

@@ -26,7 +26,7 @@
 #' dat <- generate_data_MASSIVE_model(N, 2, EAF, parameters)
 #' robust_find_optimum(
 #'   J, N, dat$SS, binomial_sigma_G(dat$SS), 
-#'   prior_sd = decode_model(get_random_IV_model(J), 1, 0.01), 
+#'   prior_sd = decode_IV_model(get_random_IV_model(J), 1, 0.01), 
 #'   skappa_X = 1, skappa_Y = 1
 #' )
 robust_find_optimum <- function(J, N, SS, sigma_G, prior_sd, skappa_X, skappa_Y, tol = 1e-6,
@@ -108,7 +108,7 @@ robust_find_optimum <- function(J, N, SS, sigma_G, prior_sd, skappa_X, skappa_Y,
 #' dat <- generate_data_MASSIVE_model(N, 2, EAF, parameters)
 #' find_optimum(
 #'   J, N, dat$SS, binomial_sigma_G(dat$SS), 
-#'   prior_sd = decode_model(get_random_IV_model(J), 1, 0.01), 
+#'   prior_sd = decode_IV_model(get_random_IV_model(J), 1, 0.01), 
 #'   skappa_X = 1, skappa_Y = 1
 #' )
 find_optimum <- function(J, N, SS, sigma_G, prior_sd, skappa_X, skappa_Y, 

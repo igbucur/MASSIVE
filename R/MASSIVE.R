@@ -35,7 +35,7 @@
 #' median(samples$betas)
 MASSIVE <- function(J, N, SS, sigma_G, sd_slab, sd_spike, max_iter = 1000,
                     greedy_search = parallel_greedy_search, 
-                    Laplace_approximation = safe_smart_LA_log,
+                    Laplace_approximation = safe_Laplace_approximation,
                     pruning_threshold = 3e-3, posterior_samples = 10000, ...) {
   
   # Run greedy search to arrive at good initial IV model for MC3 sampler.
@@ -113,7 +113,7 @@ sample_from_BMA_posterior <- function(J, N, list_models, num_samples = 10000, lo
   spars <- do.call('rbind', lapply(1:length(model_num_samples), function(i) {
     
     LA <- list_models[[models[i]]]
-    LA$optima <- LA$optima[order(sapply(LA$optima, '[[', 'mixture_prob'), decreasing = T)] # TODO: move
+    LA$optima <- LA$optima[order(sapply(LA$optima, '[[', 'mixture_prob'), decreasing = T)]
     
     mixture_num_samples <- round(sapply(LA$optima, '[[', 'mixture_prob') * model_num_samples[i])
     mixture_num_samples[1] <- mixture_num_samples[1] + model_num_samples[i] - sum(mixture_num_samples)

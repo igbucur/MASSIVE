@@ -32,7 +32,7 @@
 parallel_greedy_search <- function(
   J, N, SS, sigma_G, sd_slab = 1, sd_spike = 0.01, 
   init_model = NULL, get_neighbors = neighbor_IV_models, 
-  LA_function = safe_smart_LA_log, ...
+  LA_function = safe_Laplace_approximation, ...
 ) {
   
   approximations <- list()
@@ -42,8 +42,8 @@ parallel_greedy_search <- function(
   if (is.null(init_model)) {
     
     best_start <- which.max(c(
-      LA_function(J, N, SS, sigma_G, prior_sd = decode_model(get_full_IV_model(J), sd_slab, sd_spike), ...)$evidence, 
-      LA_function(J, N, SS, sigma_G, prior_sd = decode_model(get_empty_IV_model(J), sd_slab, sd_spike), ...)$evidence
+      LA_function(J, N, SS, sigma_G, prior_sd = decode_IV_model(get_full_IV_model(J), sd_slab, sd_spike), ...)$evidence, 
+      LA_function(J, N, SS, sigma_G, prior_sd = decode_IV_model(get_empty_IV_model(J), sd_slab, sd_spike), ...)$evidence
     ))
     
     if (best_start == 1) init_model <- get_full_IV_model(J)
@@ -52,7 +52,7 @@ parallel_greedy_search <- function(
   } 
   
   current_model <- init_model
-  current_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(current_model, sd_slab, sd_spike), ...)
+  current_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_IV_model(current_model, sd_slab, sd_spike), ...)
   
   print(paste("Current best model:", current_model))
   print(paste("Evidence of best model:", current_model_LA$evidence))
@@ -72,7 +72,7 @@ parallel_greedy_search <- function(
     new_approximations <- parallel::mclapply(
       candidates, function(new_model) {
         if (is.null(scores[[new_model]])) {
-          new_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(new_model, sd_slab, sd_spike), ...)
+          new_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_IV_model(new_model, sd_slab, sd_spike), ...)
           new_score <- new_model_LA$evidence
           
           return (list(name = new_model, LA = new_model_LA))
@@ -138,7 +138,7 @@ parallel_greedy_search <- function(
 stochastic_greedy_search <- function(
   J, N, SS, sigma_G = NULL, sd_slab = 1, sd_spike = 0.01, 
   init_model = NULL, get_neighbors = neighbor_IV_models, 
-  LA_function = safe_smart_LA_log, ...
+  LA_function = safe_Laplace_approximation, ...
   ) {
   
   approximations <- list()
@@ -147,8 +147,8 @@ stochastic_greedy_search <- function(
   if (is.null(init_model)) {
     
     best_start <- which.max(c(
-      LA_function(J, N, SS, sigma_G, prior_sd = decode_model(get_full_IV_model(J), sd_slab, sd_spike), ...)$evidence, 
-      LA_function(J, N, SS, sigma_G, prior_sd = decode_model(get_empty_IV_model(J), sd_slab, sd_spike), ...)$evidence
+      LA_function(J, N, SS, sigma_G, prior_sd = decode_IV_model(get_full_IV_model(J), sd_slab, sd_spike), ...)$evidence, 
+      LA_function(J, N, SS, sigma_G, prior_sd = decode_IV_model(get_empty_IV_model(J), sd_slab, sd_spike), ...)$evidence
     ))
     
     if (best_start == 1) init_model <- get_full_IV_model(J)
@@ -156,7 +156,7 @@ stochastic_greedy_search <- function(
   } 
   
   current_model <- init_model
-  current_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(current_model, sd_slab, sd_spike), ...)
+  current_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_IV_model(current_model, sd_slab, sd_spike), ...)
   
   print(paste("Current best model:", current_model))
   print(paste("Evidence of best model:", current_model_LA$evidence))
@@ -176,7 +176,7 @@ stochastic_greedy_search <- function(
       if (is.null(approximations[[new_model]])) {
         models_visited <- models_visited + 1
         
-        new_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_model(new_model, sd_slab, sd_spike), ...)
+        new_model_LA <- LA_function(J, N, SS, sigma_G, prior_sd = decode_IV_model(new_model, sd_slab, sd_spike), ...)
         approximations[[new_model]] <- new_model_LA
       }
       

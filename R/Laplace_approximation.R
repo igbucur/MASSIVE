@@ -32,20 +32,20 @@
 #' parameters <- random_Gaussian_parameters(J) 
 #' EAF <- runif(J, 0.1, 0.9) # EAF random values
 #' dat <- generate_data_MASSIVE_model(N, 2, EAF, parameters)
-#' safe_smart_LA_log(
+#' safe_Laplace_approximation(
 #'   J, N, dat$SS, binomial_sigma_G(dat$SS), 
-#'   decode_model(get_random_IV_model(J), 1, 0.01)
+#'   decode_IV_model(get_random_IV_model(J), 1, 0.01)
 #' )
-safe_smart_LA_log <- function(J, N, SS, sigma_G, prior_sd, 
+safe_Laplace_approximation <- function(J, N, SS, sigma_G, prior_sd, 
                               post_fun = scaled_nl_posterior_log, 
                               gr_fun = scaled_nl_gradient_log, 
                               hess_fun = scaled_nl_hessian_log, 
                               opt_fun = robust_find_optimum, starting_points = "smart") {
   
   tryCatch(
-    smart_LA_log(J, N, SS, sigma_G, prior_sd, post_fun, gr_fun, hess_fun, opt_fun, starting_points),
+    Laplace_approximation(J, N, SS, sigma_G, prior_sd, post_fun, gr_fun, hess_fun, opt_fun, starting_points),
     error = function(e) {
-      smart_LA_log(J, N, SS, sigma_G, prior_sd, post_fun, gr_fun, hess_fun, opt_fun, "guess")
+      Laplace_approximation(J, N, SS, sigma_G, prior_sd, post_fun, gr_fun, hess_fun, opt_fun, "guess")
     }
   )
 }
@@ -82,11 +82,11 @@ safe_smart_LA_log <- function(J, N, SS, sigma_G, prior_sd,
 #' parameters <- random_Gaussian_parameters(J) 
 #' EAF <- runif(J, 0.1, 0.9) # EAF random values
 #' dat <- generate_data_MASSIVE_model(N, 2, EAF, parameters)
-#' smart_LA_log(
+#' Laplace_approximation(
 #'   J, N, dat$SS, binomial_sigma_G(dat$SS), 
-#'   decode_model(get_random_IV_model(J), 1, 0.01)
+#'   decode_IV_model(get_random_IV_model(J), 1, 0.01)
 #' )
-smart_LA_log <- function(J, N, SS, sigma_G, prior_sd, 
+Laplace_approximation <- function(J, N, SS, sigma_G, prior_sd, 
                          post_fun = scaled_nl_posterior_log, 
                          gr_fun = scaled_nl_gradient_log, 
                          hess_fun = scaled_nl_hessian_log, 
@@ -216,6 +216,12 @@ smart_LA_log <- function(J, N, SS, sigma_G, prior_sd,
 #' @export
 #'
 #' @examples
+#' J <- 5 # number of instruments
+#' N <- 1000 # number of samples
+#' parameters <- random_Gaussian_parameters(J) 
+#' EAF <- runif(J, 0.1, 0.9) # EAF random values
+#' dat <- generate_data_MASSIVE_model(N, 2, EAF, parameters)
+#' derive_smart_starting_points(dat$SS)
 derive_smart_starting_points <- function(SS, sigma_G = binomial_sigma_G(SS)) {
   
   J <- ncol(SS) - 3
