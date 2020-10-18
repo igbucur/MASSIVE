@@ -2,18 +2,18 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 neg_log_prior_MR <- function(param_list, prior_sd) {
-    .Call('_MASSIVE_neg_log_prior_MR', PACKAGE = 'MASSIVE', param_list, prior_sd)
+    .Call(`_MASSIVE_neg_log_prior_MR`, param_list, prior_sd)
 }
 
 scaled_nl_posterior_MR <- function(J, N, SS, sigma_G, param_list, prior_sd, n = 2L) {
-    .Call('_MASSIVE_scaled_nl_posterior_MR', PACKAGE = 'MASSIVE', J, N, SS, sigma_G, param_list, prior_sd, n)
+    .Call(`_MASSIVE_scaled_nl_posterior_MR`, J, N, SS, sigma_G, param_list, prior_sd, n)
 }
 
 scaled_nl_gradient_MR <- function(J, N, SS, sigma_G, param_list, prior_sd, n = 2L) {
-    .Call('_MASSIVE_scaled_nl_gradient_MR', PACKAGE = 'MASSIVE', J, N, SS, sigma_G, param_list, prior_sd, n)
+    .Call(`_MASSIVE_scaled_nl_gradient_MR`, J, N, SS, sigma_G, param_list, prior_sd, n)
 }
 
 scaled_nl_hessian_MR <- function(J, N, SS, sigma_G, param_list, prior_sd, n = 2L) {
-    .Call('_MASSIVE_scaled_nl_hessian_MR', PACKAGE = 'MASSIVE', J, N, SS, sigma_G, param_list, prior_sd, n)
+    .Call(`_MASSIVE_scaled_nl_hessian_MR`, J, N, SS, sigma_G, param_list, prior_sd, n)
 }
 

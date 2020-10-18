@@ -31,13 +31,16 @@
 #' N <- 1000 # number of samples
 #' parameters <- random_Gaussian_parameters(J) 
 #' EAF <- runif(J, 0.1, 0.9) # EAF random values
-#' dat <- gen_data_miv_sem(N, n, EAF, parameters)
-#' safe_smart_LA_log(J, N, dat$ESS, binomial_sigma_G(dat$ESS), decode_model(get_ply_model(J), 1, 0.01))
+#' dat <- generate_data_MASSIVE_model(N, 2, EAF, parameters)
+#' safe_smart_LA_log(
+#'   J, N, dat$SS, binomial_sigma_G(dat$SS), 
+#'   decode_model(get_random_IV_model(J), 1, 0.01)
+#' )
 safe_smart_LA_log <- function(J, N, SS, sigma_G, prior_sd, 
                               post_fun = scaled_nl_posterior_log, 
                               gr_fun = scaled_nl_gradient_log, 
                               hess_fun = scaled_nl_hessian_log, 
-                              opt_fun = find_optimum, starting_points = "smart") {
+                              opt_fun = robust_find_optimum, starting_points = "smart") {
   
   tryCatch(
     smart_LA_log(J, N, SS, sigma_G, prior_sd, post_fun, gr_fun, hess_fun, opt_fun, starting_points),
@@ -47,36 +50,7 @@ safe_smart_LA_log <- function(J, N, SS, sigma_G, prior_sd,
   )
 }
 
-#' Title
-#'
-#' @param J 
-#' @param N 
-#' @param SS 
-#' @param sigma_G 
-#' @param prior_sd 
-#' @param post_fun 
-#' @param gr_fun 
-#' @param hess_fun 
-#' @param opt_fun 
-#' @param starting_points 
-#'
-#' @return
-#' @export
-#'
-#' @examples
-robust_safe_smart_LA_log <- function(J, N, SS, sigma_G, prior_sd, 
-                              post_fun = scaled_nl_posterior_log, 
-                              gr_fun = scaled_nl_gradient_log, 
-                              hess_fun = scaled_nl_hessian_log, 
-                              opt_fun = robust_find_optimum, starting_points = "smart") {
 
-  tryCatch(
-    smart_LA_log(J, N, SS, sigma_G, prior_sd, post_fun, gr_fun, hess_fun, opt_fun, starting_points),
-    error = function(e) {
-      smart_LA_log(J, N, SS, sigma_G, prior_sd, post_fun, gr_fun, hess_fun, opt_fun, "guess")
-    }
-  )
-}
 
 #' Routine for computing the Laplace approximation of the MASSIVE posterior using
 #' smart initialization points to find all the conjectured optima.
@@ -107,8 +81,11 @@ robust_safe_smart_LA_log <- function(J, N, SS, sigma_G, prior_sd,
 #' N <- 1000 # number of samples
 #' parameters <- random_Gaussian_parameters(J) 
 #' EAF <- runif(J, 0.1, 0.9) # EAF random values
-#' dat <- gen_data_miv_sem(N, n, EAF, parameters)
-#' safe_smart_LA_log(J, N, dat$ESS, binomial_sigma_G(dat$ESS), decode_model(get_ply_model(J), 1, 0.01))
+#' dat <- generate_data_MASSIVE_model(N, 2, EAF, parameters)
+#' smart_LA_log(
+#'   J, N, dat$SS, binomial_sigma_G(dat$SS), 
+#'   decode_model(get_random_IV_model(J), 1, 0.01)
+#' )
 smart_LA_log <- function(J, N, SS, sigma_G, prior_sd, 
                          post_fun = scaled_nl_posterior_log, 
                          gr_fun = scaled_nl_gradient_log, 
@@ -127,7 +104,7 @@ smart_LA_log <- function(J, N, SS, sigma_G, prior_sd,
       c(2 * prior_sd$sd_slab, -prior_sd$sd_slab)
     )
   } else if (starting_points == "smart") {
-    starting_points <- smarting_points(SS, sigma_G)
+    starting_points <- derive_smart_starting_points(SS, sigma_G)
   } else {
     stop("Unknown value for parameter starting_points.")
   }
@@ -227,3 +204,51 @@ smart_LA_log <- function(J, N, SS, sigma_G, prior_sd,
   
   list(optima = results, num_optima = length(results), evidence = total_evidence)
 }
+
+
+#' Routine for computing smart starting points from the sufficient statistics.
+#'
+#' @param SS Numeric matrix containing first- and second-order statistics.
+#' @param sigma_G Numeric vector of instrument standard deviations.
+#'
+#' @return List containing three smart starting points on the ML manifold for 
+#' the posterior optimization.
+#' @export
+#'
+#' @examples
+derive_smart_starting_points <- function(SS, sigma_G = binomial_sigma_G(SS)) {
+  
+  J <- ncol(SS) - 3
+  
+  # 1. Zero kappa solution
+  zero_kappa <- c(0, 0)
+  
+  # 2. Zero beta solution
+  # Compute Cov[X, Y | G] using Schur's complement
+  cov_XY_G <- SS[(J+2):(J+3), (J+2):(J+3)] - SS[(J+2):(J+3), 2:(J+1)] %*% solve(SS[2:(J+1), 2:(J+1)]) %*% SS[2:(J+1), (J+2):(J+3)]
+  
+  corr <- abs(cov_XY_G[1, 2] / sqrt(cov_XY_G[1, 1] * cov_XY_G[2, 2]))
+  skappa_X <- sqrt(corr / (1 - corr))
+  skappa_Y <- skappa_X * sign(cov_XY_G[1, 2])
+  
+  zero_beta <- c(skappa_X, skappa_Y)
+  
+  # 3. (Close to) Zero alpha solution
+  r_y <- solve(SS[2:(J+1), 2:(J+1)], SS[2:(J+1), J+3])
+  r_x <- solve(SS[2:(J+1), 2:(J+1)], SS[2:(J+1), J+2])
+  
+  # instead of (X, Y), we basically work with (X, Y - beta_ML * X)
+  beta_ML <- sum(r_y * r_x) / sum(r_x^2)
+  adj_corr <- abs(
+    (cov_XY_G[1, 2] - beta_ML * cov_XY_G[1, 1]) /
+      sqrt(cov_XY_G[1, 1] * (cov_XY_G[2, 2] + beta_ML^2 * cov_XY_G[1, 1] - 2 * beta_ML * cov_XY_G[1, 2]))
+  )
+  
+  skappa_X <- sqrt(adj_corr / (1 - adj_corr))
+  skappa_Y <- skappa_X * sign(cov_XY_G[1, 2] - beta_ML * cov_XY_G[1, 1])
+  
+  min_alpha <- c(skappa_X, skappa_Y)
+  
+  list(zero_kappa, zero_beta, min_alpha)
+}
+

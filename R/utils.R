@@ -3,6 +3,12 @@ c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "
 
 # Parameter container conversion ------------------------------------------
 
+#' Function for converting vector of parameters to list format.
+#'
+#' @param param_vector Vector of MASSIVE model parameters.
+#'
+#' @return List containing same parameters.
+#' @export
 parameter_vector_to_list <- function(param_vector) {
   # TODO: maybe mention J explicitly?
   J <- (length(param_vector) - 5) / 2
@@ -17,6 +23,17 @@ parameter_vector_to_list <- function(param_vector) {
   )
 }
 
+#' Function for converting list of parameters to vector format, often necessary 
+#' when running optimization routines.
+#'
+#' @param param_list List of MASSIVE model parameters. 
+#'
+#' @return Numeric vector containing same parameters.
+#' @export
+#'
+#' @examples
+#' par <- random_Gaussian_parameters(10)
+#' parameter_list_to_vector(par)
 parameter_list_to_vector <- function(param_list) {
   c(
     param_list$sgamma,
@@ -49,6 +66,14 @@ random_Gaussian_parameters_log <- function(J) {
   )
 }
 
+#' Generate random Gaussian distributed parameters
+#'
+#' @param J Integer number of instrumental variables.
+#'
+#' @return List of random parameters for the IV model generated from Gaussian distributions.
+#' @export
+#'
+#' @examples random_Gaussian_parameters(10)
 random_Gaussian_parameters <- function(J) {
   sgamma <- stats::rnorm(J)
   salpha <- stats::rnorm(J)
@@ -93,13 +118,29 @@ MR_regression_coefficients_to_moments <- function(J, beta_XG, sigma_XG, nobs_XG,
   SSS
 }
 
-gen_data_miv_sem_log <- function(N, n, p, par, seed = NULL) {
+generate_data_MASSIVE_model_log <- function(N, n, p, par, seed = NULL) {
   par$sigma_X <- exp(par$sigma_X)
   par$sigma_Y <- exp(par$sigma_Y)
-  gen_data_miv_sem(N, n, p, par, seed)
+  generate_data_MASSIVE_model(N, n, p, par, seed)
 }
 
-gen_data_miv_sem <- function(N, n, p, par, seed = NULL) {
+#' Function to generate data from a MASSIVE generating model.
+#'
+#' @param N Integer number of observations.
+#' @param n Integer number of alleles (trials) for the binomial genetic variables.
+#' @param p Numeric expected allele frequencies for the genetic variables.
+#' @param par List of MASSIVE model parameters
+#' @param seed Integer representing seed for random number generation.
+#'
+#' @return List containing generate data vector as well as the scatter matrix
+#' of first-order and second-order statistics.
+#' @export
+#'
+#' @examples
+#' J <- 5 # number of instruments
+#' par <- random_Gaussian_parameters(J)
+#' generate_data_MASSIVE_model(N = 1000, n = 2, p = rep(0.3, J), par)
+generate_data_MASSIVE_model <- function(N, n, p, par, seed = NULL) {
   
   set.seed(seed)
   
@@ -115,9 +156,9 @@ gen_data_miv_sem <- function(N, n, p, par, seed = NULL) {
   X <- G %*% gamma + kappa_X * U + stats::rnorm(N, sd = par$sigma_X)
   Y <- G %*% alpha + kappa_Y * U + beta * X + stats::rnorm(N, sd = par$sigma_Y)
   Z <- cbind(1, G, X, Y)
-  ESS <- t(Z) %*% Z / N # first and second-order moments
+  SS <- t(Z) %*% Z / N # first and second-order moments
   
-  list(Z = Z, ESS = ESS, U = U)
+  list(Z = Z, SS = SS)
 }
 
 
@@ -153,15 +194,9 @@ get_ML_solution <- function(SS, skappa_X, skappa_Y, sigma_G) {
 
 # Model codecs and random generators --------------------------------------
 
-get_null_model <- function(J) {
-  paste(c(
-    paste(rep("0", J), collapse = ""),
-    paste(rep("0", J), collapse = ""),
-    "0", "0", "0"
-  ), collapse = "|")
-}
 
-get_full_model <- function(J) {
+
+get_full_IV_model <- function(J) {
   paste(c(
     paste(rep("1", J), collapse = ""),
     paste(rep("1", J), collapse = ""),
@@ -169,7 +204,7 @@ get_full_model <- function(J) {
   ), collapse = "|")
 }
 
-get_ivar_model <- function(J) {
+get_empty_IV_model <- function(J) {
   paste(c(
     paste(rep("1", J), collapse = ""),
     paste(rep("0", J), collapse = ""),
@@ -177,17 +212,17 @@ get_ivar_model <- function(J) {
   ), collapse = "|")
 }
 
-get_random_model <- function(J) {
-  # note, we bind prior on confounding coefficients (either both slab or spike)
-  sp_or_sl <- as.character(sample(c(0, 1), 2 * J + 2, replace = TRUE))
-  paste(c(
-    paste(sp_or_sl[1:J], collapse = ""),
-    paste(sp_or_sl[(J+1):(2*J)], collapse = ""),
-    sp_or_sl[2*J+1], sp_or_sl[2*J+2], sp_or_sl[2*J+2]
-  ), collapse = "|")
-}
 
-get_ply_model <- function(J) {
+#' Function for generating a random IV model (combination of slab and spike priors).
+#'
+#' @param J Integer number of candidate instruments.
+#'
+#' @return Character vector representing random IV model.
+#' @export
+#'
+#' @examples
+#' get_random_IV_model(5)
+get_random_IV_model <- function(J) {
   sp_or_sl <- as.character(sample(c(0, 1), J, replace = TRUE))
   paste(c(
     paste(rep("1", J), collapse = ""),
@@ -196,26 +231,37 @@ get_ply_model <- function(J) {
   ), collapse = "|")
 }
 
+#' Function for decoding a character vector representing IV model.
+#'
+#' @param code Character vector encoding IV model.
+#' @param sd_slab Standard deviation of slab component.
+#' @param sd_spike Standard deviation of spike component.
+#'
+#' @return List describing prior for IV model.
+#' @export
+#'
+#' @examples
+#' decode_model(code = get_random_IV_model(5), sd_slab = 1, sd_spike = 0.01)
 decode_model <- function(code, sd_slab, sd_spike) {
   tokens <- strsplit(code, "\\|")[[1]]
-  digits <- stringr::str_extract_all(tokens, "[01]")
-  names(digits) <- c('sgamma', 'salpha', 'sbeta', 'skappa_X', 'skappa_Y')
-  digits <- lapply(digits, function(x) ifelse(x == "1", sd_slab, sd_spike))
-  digits$sd_slab <- sd_slab
-  digits$sd_spike <- sd_spike
+  IV_model <- stringr::str_extract_all(tokens, "[01]")
+  names(IV_model) <- c('sgamma', 'salpha', 'sbeta', 'skappa_X', 'skappa_Y')
+  IV_model <- lapply(IV_model, function(x) ifelse(x == "1", sd_slab, sd_spike))
+  IV_model$sd_slab <- sd_slab
+  IV_model$sd_spike <- sd_spike
   
-  digits
+  IV_model
 }
 
-encode_model <- function(prior) {
-  paste0(c(
-    paste0(sapply(prior$sgamma, function(sd) ifelse(sd == prior$sd_slab, 1, 0)), collapse = ""),
-    paste0(sapply(prior$salpha, function(sd) ifelse(sd == prior$sd_slab, 1, 0)), collapse = ""),
-    ifelse(prior$sbeta == prior$sd_slab, 1, 0),
-    ifelse(prior$skappa_X == prior$sd_slab, 1, 0),
-    ifelse(prior$skappa_Y == prior$sd_slab, 1, 0)
-  ), collapse = "|")
-}
+# encode_model <- function(prior) {
+#   paste0(c(
+#     paste0(sapply(prior$sgamma, function(sd) ifelse(sd == prior$sd_slab, 1, 0)), collapse = ""),
+#     paste0(sapply(prior$salpha, function(sd) ifelse(sd == prior$sd_slab, 1, 0)), collapse = ""),
+#     ifelse(prior$sbeta == prior$sd_slab, 1, 0),
+#     ifelse(prior$skappa_X == prior$sd_slab, 1, 0),
+#     ifelse(prior$skappa_Y == prior$sd_slab, 1, 0)
+#   ), collapse = "|")
+# }
 
 determine_hyperparameters <- function(J, N, SS, sigma_G, fact = 101) {
   
@@ -252,81 +298,25 @@ old_determine_hyperparameters <- function(J, N, SS, sigma_G) {
   list(sd_slab = est_sd_slab, sd_spike = est_sd_spike)
 }
 
-spike_slab_boundary <- function(sd_slab, sd_spike) {
-  C <- sd_slab / sd_spike
-  sqrt(2*log(C) * sd_slab^2 / (C^2 - 1))
-}
 
+#' Function for deriving the estimated standard deviation of the genetic variants 
+#' from the first-order and second-order statistics, assuming these are 
+#' binomially distributed.
+#'
+#' @param SS Numeric matrix of first-order and second-order statistics.
+#' @param n Integer number of alleles (trials) for the binomial genetic variables. 
+#'
+#' @return Numeric vector containing the standard deviations of the genetic variants.
+#' @export
+#'
+#' @examples
+#' J <- 5 # number of instruments
+#' par <- random_Gaussian_parameters(J)
+#' dat <- generate_data_MASSIVE_model(N = 1000, n = 2, p = rep(0.3, J), par)
+#' binomial_sigma_G(dat$SS)
 binomial_sigma_G <- function(SS, n = 2) {
   J <- nrow(SS) - 3
   sqrt(SS[1, 2:(J+1)] * (1 - SS[1, 2:(J+1)] / n))
-}
-
-# Routine for computing smart starting points
-smarting_points <- function(SS, sigma_G = binomial_sigma_G(SS)) {
-  
-  J <- ncol(SS) - 3
-  
-  # Zero kappa solution
-  zero_kappa <- c(0, 0)
-  # zero_kappa <- get_ML_solution(SS, 0, 0, sigma_G)
-  
-  # Zero beta solution
-  # also works here, because the means are zero
-  cov_XY_G <- SS[(J+2):(J+3), (J+2):(J+3)] - SS[(J+2):(J+3), 2:(J+1)] %*% solve(SS[2:(J+1), 2:(J+1)]) %*% SS[2:(J+1), (J+2):(J+3)]
-  #cov_XY <- SS[-1, -1] - SS[-1, 1, drop = FALSE] %*% SS[1, -1, drop = FALSE]
-  #cov_XY_G <- cov_XY[(J+1):(J+2), (J+1):(J+2)] - cov_XY[(J+1):(J+2), 1:J] %*% solve(cov_XY[1:J, 1:J]) %*% cov_XY[1:J, (J+1):(J+2)]
-  
-  corr <- abs(cov_XY_G[1, 2] / sqrt(cov_XY_G[1, 1] * cov_XY_G[2, 2]))
-  skappa_X <- sqrt(corr / (1 - corr))
-  skappa_Y <- skappa_X * sign(cov_XY_G[1, 2])
-  
-  zero_beta <- c(skappa_X, skappa_Y)
-  # zero_beta <- get_ML_solution(SS, skappa_X, skappa_Y, sigma_G)
-
-  # (Close to) Zero alpha solution
-  r_y <- solve(SS[2:(J+1), 2:(J+1)], SS[2:(J+1), J+3])
-  r_x <- solve(SS[2:(J+1), 2:(J+1)], SS[2:(J+1), J+2])
-  
-  # instead of (X, Y), we basically work with (X, Y - beta_ML * X)
-  beta_ML <- sum(r_y * r_x) / sum(r_x^2)
-  adj_corr <- abs(
-    (cov_XY_G[1, 2] - beta_ML * cov_XY_G[1, 1]) /
-      sqrt(cov_XY_G[1, 1] * (cov_XY_G[2, 2] + beta_ML^2 * cov_XY_G[1, 1] - 2 * beta_ML * cov_XY_G[1, 2]))
-  )
-  
-  skappa_X <- sqrt(adj_corr / (1 - adj_corr))
-  skappa_Y <- skappa_X * sign(cov_XY_G[1, 2] - beta_ML * cov_XY_G[1, 1])
-  
-  min_alpha <- c(skappa_X, skappa_Y)
-  
-  # grid_skappa_X <- seq(100, 105, 0.1)
-  # grid_skappa_Y <- seq(-1, 1, 0.1)
-  # 
-  # grid_cc <- expand.grid(grid_skappa_X, grid_skappa_Y)
-  # 
-  # alpha_min <- function(cc) {
-  #   
-  #   ML <- get_ML_solution(SS, cc[1], cc[2], sigma_G)
-  #   # mean((ML$salpha * ML$sigma_Y)^2)
-  #   mean((ML$salpha * ML$sigma_Y)^2)
-  # }
-  # 
-  # alpha_z <- apply(grid_cc, 1, function(cc) {
-  #   
-  #   ML <- get_ML_solution(SS, cc[1], cc[2], sigma_G)
-  #   # mean((ML$salpha * ML$sigma_Y)^2)
-  #   mean((ML$salpha * ML$sigma_Y)^2)
-  # })
-  # 
-  # contour(grid_skappa_X, grid_skappa_Y, matrix(alpha_z, length(grid_skappa_X), length(grid_skappa_Y)), nlevels = 50)
-  # 
-  # f <- function(beta) {
-  #   mean((solve(SS[2:(J+1), 2:(J+1)], SS[2:(J+1), J+3]) - beta * solve(SS[2:(J+1), 2:(J+1)], SS[2:(J+1), J+2]))^2)
-  # }
-  # 
-  
-  list(zero_kappa, zero_beta, min_alpha)
 }
 
 
@@ -371,10 +361,3 @@ table_view <- function(list_models, J) {
   }))
 }
 
-
-analyze_MASSIVE_output <- function(MASSIVE_result, J, N, pruning_threshold = 3e-3) {
-  MASSIVE_models <- compare_and_select_models(MASSIVE_result, prob_threshold = pruning_threshold)
-  beta_samples <- get_LA_posterior_samples(J, N, MASSIVE_models, 1e5)
-  plot(density(beta_samples$betas, bw = 0.01))
-  analyze_model_approximations(MASSIVE_models)
-}

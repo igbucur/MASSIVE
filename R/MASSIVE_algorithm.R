@@ -9,6 +9,10 @@
 #' @param max_iter Maximum number of stochastic search steps.
 #' @param Laplace_approximation Function used to compute Laplace approximation of IV model.
 #' @param greedy_search Function for initial greedy search.
+#' @param pruning_threshold Numeric threshold for pruning approximated IV models.
+#' Models with probability less that threshold are pruned out.
+#' @param posterior_samples Integer number of posterior samples to generate.
+#' @param ... Extra arguments for greedy_search, Laplace_approximations and find_causal_models.
 #'
 #' @return List of explored IV model approximations and their evidences
 #' @export
@@ -30,13 +34,27 @@
 #' plot(density(samples$betas))
 #' median(samples$betas)
 MASSIVE <- function(J, N, SS, sigma_G, sd_slab, sd_spike, max_iter = 1000,
-                    greedy_search = parallel_greedy_search, Laplace_approximation = safe_smart_LA_log) {
+                    greedy_search = parallel_greedy_search, 
+                    Laplace_approximation = safe_smart_LA_log,
+                    pruning_threshold = 3e-3, posterior_samples = 10000, ...) {
   
-  greedy_start <- greedy_search(J, N, SS, sigma_G, sd_slab = sd_slab, sd_spike = sd_spike, LA_function = Laplace_approximation)
-  model_approximations <- find_causal_models(J, N, SS, sigma_G, greedy_start = greedy_start, LA_function = Laplace_approximation,
-                                             keep_greedy_approximations = TRUE, sd_slab = sd_slab, sd_spike = sd_spike, max_iter = max_iter)
-  pruned_list <- prune_model_list(model_approximations, pruning_threshold) # at least thirty samples in each component
+  # Run greedy search to arrive at good initial IV model for MC3 sampler.
+  greedy_start <- greedy_search(
+    J, N, SS, sigma_G, sd_slab = sd_slab, sd_spike = sd_spike, 
+    LA_function = Laplace_approximation, ...
+  )
+  # Run MC3 sampler and collect list of visited IV models together with their evidences.
+  model_approximations <- find_causal_models(
+    J, N, SS, sigma_G, greedy_start = greedy_start, 
+    LA_function = Laplace_approximation, keep_greedy_approximations = TRUE, 
+    sd_slab = sd_slab, sd_spike = sd_spike, max_iter = max_iter, ...
+  )
+  # Prune list of discovered approximate IV models having too little probability.
+  pruned_list <- prune_model_list(model_approximations, pruning_threshold) 
+  
+  # Generate BMA samples from the final list of selected approximate IV models.
   BMA_posterior_samples <- sample_from_BMA_posterior(J, N, pruned_list, posterior_samples)
+  
   BMA_posterior_samples
 }
 
@@ -108,6 +126,16 @@ sample_from_BMA_posterior <- function(J, N, list_models, num_samples = 10000, lo
       }
     }))
   }))
+  
+  names(spars) <- c(
+    sprintf("sgamma[%d]", 1:J),
+    sprintf("salpha[%d]", 1:J),
+    "sbeta",
+    "skappa_X",
+    "skappa_Y",
+    "sigma_X",
+    "sigma_Y"
+  )
   
   if (log_sd) {
     betas <-  spars[, 2*J+1] / exp(spars[, 2*J+4]) * exp(spars[, 2*J+5])
