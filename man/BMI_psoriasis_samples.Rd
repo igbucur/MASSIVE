@@ -3,7 +3,7 @@
 \docType{data}
 \name{BMI_psoriasis_samples}
 \alias{BMI_psoriasis_samples}
-\title{A dataset containing results for reproducing Figure 14 in Section 4 of the UAI article.}
+\title{A dataset containing results for reproducing Figure 7 in Section 6 of the UAI article.}
 \format{
 An object of class \code{list} of length 3.
 }
@@ -11,6 +11,6 @@ An object of class \code{list} of length 3.
 BMI_psoriasis_samples
 }
 \description{
-A dataset containing results for reproducing Figure 14 in Section 4 of the UAI article.
+A dataset containing results for reproducing Figure 7 in Section 6 of the UAI article.
 }
 \keyword{datasets}

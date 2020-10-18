@@ -10,7 +10,7 @@ random_Gaussian_parameters(J)
 \item{J}{Integer number of instrumental variables.}
 }
 \value{
-
+List of random parameters for the IV model generated from Gaussian distributions.
 }
 \description{
 Generate random Gaussian distributed parameters
