@@ -14,7 +14,7 @@ find_causal_models(
   sd_spike = 0.01,
   max_iter = 1000,
   propose_model = propose_neighbor_IV_model,
-  LA_function = safe_smart_LA_log,
+  LA_function = safe_Laplace_approximation,
   greedy_start = NULL,
   keep_greedy_approximations = FALSE,
   ...

@@ -13,7 +13,7 @@ MASSIVE(
   sd_spike,
   max_iter = 1000,
   greedy_search = parallel_greedy_search,
-  Laplace_approximation = safe_smart_LA_log,
+  Laplace_approximation = safe_Laplace_approximation,
   pruning_threshold = 0.003,
   posterior_samples = 10000,
   ...

@@ -18,3 +18,11 @@ the posterior optimization.
 \description{
 Routine for computing smart starting points from the sufficient statistics.
 }
+\examples{
+J <- 5 # number of instruments
+N <- 1000 # number of samples
+parameters <- random_Gaussian_parameters(J) 
+EAF <- runif(J, 0.1, 0.9) # EAF random values
+dat <- generate_data_MASSIVE_model(N, 2, EAF, parameters)
+derive_smart_starting_points(dat$SS)
+}

@@ -4,7 +4,7 @@
 \alias{generate_data_MASSIVE_model}
 \title{Function to generate data from a MASSIVE generating model.}
 \usage{
-generate_data_MASSIVE_model(N, n, p, par, seed = NULL)
+generate_data_MASSIVE_model(N, n, p, par, seed = NULL, log_scale = FALSE)
 }
 \arguments{
 \item{N}{Integer number of observations.}
@@ -16,6 +16,9 @@ generate_data_MASSIVE_model(N, n, p, par, seed = NULL)
 \item{par}{List of MASSIVE model parameters}
 
 \item{seed}{Integer representing seed for random number generation.}
+
+\item{log_scale}{Logical flag indicating whether scale parameters sigma_X
+and sigma_Y are given on the log-scale or normal scale.}
 }
 \value{
 List containing generate data vector as well as the scatter matrix

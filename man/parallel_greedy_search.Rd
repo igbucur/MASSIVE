@@ -13,7 +13,7 @@ parallel_greedy_search(
   sd_spike = 0.01,
   init_model = NULL,
   get_neighbors = neighbor_IV_models,
-  LA_function = safe_smart_LA_log,
+  LA_function = safe_Laplace_approximation,
   ...
 )
 }
