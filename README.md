@@ -50,14 +50,17 @@ meant for reproducing the simulated data used in `uai-article-figures.R`.
 
 - The folder `tests` contains a few basic unit tests for the R package.
 
-- The subfolder `inst/extdata` contains a few data files that are not in .RData
+- The folder `inst` contains additional files used during installation.
+  - The subfolder `inst/stan` contains a [Stan](https://mc-stan.org/users/interfaces/stan) 
+  file implementing the MASSIVE model, used in `reproduce-data.R` for comparing priors.
+  - The subfolder `inst/extdata` contains a few data files that are not in .RData
   format. These contains a list of genetic variants and their associations with
   BMI, the risk of psoriasis, as well as the effect allele frequencies (EAF).
-    - `GWAS_BMI.txt` corresponds to Table B (Association of BMI genetic 
+      - `GWAS_BMI.txt` corresponds to Table B (Association of BMI genetic 
     instruments with BMI in UK Biobank and HUNT) in the Supplementary Material of [(Budu-Aggrey et al., 2019)](https://journals.plos.org/plosmedicine/article?id=10.1371/journal.pmed.1002739).
-    - `GWAS_psoriasis.txt` corresponds to Table 3 (Association of BMI genetic 
+      - `GWAS_psoriasis.txt` corresponds to Table 3 (Association of BMI genetic 
     instruments with psoriasis in UK Biobank and HUNT) in the Supplementary Material of [(Budu-Aggrey et al., 2019)](https://journals.plos.org/plosmedicine/article?id=10.1371/journal.pmed.1002739).
-    - `GWAS_EAF.txt` corresponds to Supplementary Table 4 (Significant loci for BMI at P < 1 × 1e-5 for European sex-combined analysis) from the Supplementary Data of [(Locke et al., 2015)](https://www.nature.com/articles/nature14177).
+      - `GWAS_EAF.txt` corresponds to Supplementary Table 4 (Significant loci for BMI at P < 1 × 1e-5 for European sex-combined analysis) from the Supplementary Data of [(Locke et al., 2015)](https://www.nature.com/articles/nature14177).
   
 - The top folder also contains the following files:
   - `DESCRIPTION` is the file describing the R package
@@ -67,7 +70,8 @@ meant for reproducing the simulated data used in `uai-article-figures.R`.
 ## Prerequisites
 
 In order to install the software, [R](https://cran.r-project.org/) must be 
-downloaded and installed.
+downloaded and installed. The suggested package [R2BGLiMS](https://github.com/pjnewcombe/R2BGLiMS), 
+necessary for running the competing JAM-MR method, also requires the [Java JDK](https://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html) to be installed.
   
 ## Installation Instructions
 

@@ -32,4 +32,5 @@ Imports:
 Suggests: 
     testthat,
     bayesplot,
-    rstan
+    rstan,
+    R2BGLiMS
