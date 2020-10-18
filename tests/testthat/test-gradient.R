@@ -6,16 +6,15 @@ test_that("scaled_nl_gradient_MR is the gradient of scaled_nl_posterior_MR", {
   true_par <- random_Gaussian_parameters(J)
   sd_spike <- runif(1, 1e-3, 1e-1)
   sd_slab <- runif(1, 1e-1, 1e1)
+
+  data <- generate_data_MASSIVE_model(N, 2, rep(0.3, J), true_par)
   
-  # NOTE: fails with single parameter
-  data <- gen_data_miv_sem(N, 2, rep(0.3, J), true_par)
-  
-  SS <- data$ESS
+  SS <- data$SS
   sigma_G <- binomial_sigma_G(SS, 2)
   
   rand_par <- random_Gaussian_parameters(J)
   
-  model <- get_random_model(J)
+  model <- get_random_IV_model(J)
   prior <- decode_model(model, sd_slab, sd_spike)
   
   grad <- c(scaled_nl_gradient_MR(J, N, SS, sigma_G, rand_par, prior))
@@ -36,15 +35,14 @@ test_that("scaled_nl_gradient_log is the gradient of scaled_nl_posterior_log", {
   sd_spike <- runif(1, 1e-3, 1e-1)
   sd_slab <- runif(1, 1e-1, 1e1)
   
-  # NOTE: fails with single parameter
-  data <- gen_data_miv_sem_log(N, 2, rep(0.3, J), true_par)
+  data <- generate_data_MASSIVE_model_log(N, 2, rep(0.3, J), true_par)
   
-  SS <- data$ESS
+  SS <- data$SS
   sigma_G <- binomial_sigma_G(SS, 2)
   
   rand_par <- random_Gaussian_parameters_log(J)
   
-  model <- get_random_model(J)
+  model <- get_random_IV_model(J)
   prior <- decode_model(model, sd_slab, sd_spike)
   
   grad <- c(scaled_nl_gradient_log(J, N, SS, sigma_G, rand_par, prior))

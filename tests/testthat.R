@@ -1,4 +1,4 @@
 library(testthat)
-library(massive)
+library(MASSIVE)
 
-test_check("massive")
+test_check("MASSIVE")
